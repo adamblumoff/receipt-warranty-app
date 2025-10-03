@@ -69,12 +69,8 @@ const mapWarranty = (doc: WarrantyDoc): Warranty => ({
 
 export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.ReactElement => {
   const convex = useConvex();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-  const listCouponsRef = api['queries']['benefits'].listCoupons;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-  const listWarrantiesRef = api['queries']['benefits'].listWarranties;
-  const addCouponMutation = useMutation(api['mutations']['benefits'].addCoupon);
-  const addWarrantyMutation = useMutation(api['mutations']['benefits'].addWarranty);
+  const addCouponMutation = useMutation(api.mutations.benefits.addCoupon);
+  const addWarrantyMutation = useMutation(api.mutations.benefits.addWarranty);
 
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [warranties, setWarranties] = useState<Warranty[]>([]);
@@ -107,21 +103,16 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
   }, []);
 
   const fetchRemote = useCallback(async () => {
-    if (!process.env.EXPO_PUBLIC_CONVEX_URL) {
-      return;
-    }
     setSyncing(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const freshCoupons = await convex.query(listCouponsRef, {});
+      const freshCoupons = await convex.query(api.queries.benefits.listCoupons, {});
       if (Array.isArray(freshCoupons)) {
         const mappedCoupons = (freshCoupons as CouponDoc[]).map(mapCoupon);
         setCoupons(mappedCoupons);
         await persist({ coupons: mappedCoupons, warranties });
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const freshWarranties = await convex.query(listWarrantiesRef, {});
+      const freshWarranties = await convex.query(api.queries.benefits.listWarranties, {});
       if (Array.isArray(freshWarranties)) {
         const mappedWarranties = (freshWarranties as WarrantyDoc[]).map(mapWarranty);
         setWarranties(mappedWarranties);
@@ -132,7 +123,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
     } finally {
       setSyncing(false);
     }
-  }, [convex, coupons, listCouponsRef, listWarrantiesRef, persist, warranties]);
+  }, [convex, coupons, persist, warranties]);
 
   useEffect(() => {
     if (hydrated) {
