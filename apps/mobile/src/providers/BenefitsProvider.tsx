@@ -3,7 +3,7 @@ import { useConvex, useMutation } from 'convex/react';
 import { v4 as uuid } from 'uuid';
 import type { Coupon, Warranty } from '@receipt-warranty/shared';
 
-import { api } from '../../../convex/_generated/api';
+import { api } from '../../../../convex/_generated/api';
 import {
   getSampleBenefits,
   loadBenefits,
