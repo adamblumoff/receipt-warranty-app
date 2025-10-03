@@ -27,9 +27,6 @@
     "web": {
       "bundler": "metro",
       "output": "single"
-    },
-    "extra": {
-      "EXPO_PUBLIC_CONVEX_URL": "https://your-convex-deployment.convex.cloud"
     }
   }
 }

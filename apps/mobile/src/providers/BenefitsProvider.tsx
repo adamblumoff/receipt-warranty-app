@@ -73,10 +73,8 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
   const listCouponsRef = api['queries']['benefits'].listCoupons;
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
   const listWarrantiesRef = api['queries']['benefits'].listWarranties;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-  const addCouponMutation = useMutation(api['actions']['benefits'].addCoupon);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-  const addWarrantyMutation = useMutation(api['actions']['benefits'].addWarranty);
+  const addCouponMutation = useMutation(api['mutations']['benefits'].addCoupon);
+  const addWarrantyMutation = useMutation(api['mutations']['benefits'].addWarranty);
 
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [warranties, setWarranties] = useState<Warranty[]>([]);
