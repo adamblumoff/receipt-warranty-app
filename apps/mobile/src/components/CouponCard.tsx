@@ -17,7 +17,10 @@ const CouponCard = ({ coupon, onPress }: CouponCardProps): React.ReactElement =>
   const expiresSoon = new Date(coupon.expiresOn).getTime() - Date.now() < 1000 * 60 * 60 * 24 * 7;
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+    >
       <View style={styles.row}>
         <Text style={styles.merchant}>{coupon.merchant}</Text>
         <Text style={[styles.badge, expiresSoon && styles.badgeUrgent]}>Coupon</Text>

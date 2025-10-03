@@ -23,7 +23,8 @@ export const mockWarranties: Warranty[] = [
     merchant: 'Best Buy',
     purchaseDate: '2025-06-04',
     coverageEndsOn: '2027-06-04',
-    coverageNotes: 'Includes accidental damage protection; file a claim via Best Buy Total Tech portal.',
+    coverageNotes:
+      'Includes accidental damage protection; file a claim via Best Buy Total Tech portal.',
   },
   {
     id: 'warranty-002',

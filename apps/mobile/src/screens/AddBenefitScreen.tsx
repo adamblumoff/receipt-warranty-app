@@ -40,7 +40,9 @@ const AddBenefitScreen = (): React.ReactElement => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <Text style={styles.title}>What would you like to add?</Text>
-        <Text style={styles.subtitle}>Real capture flows will live here. Use the buttons to simulate new entries.</Text>
+        <Text style={styles.subtitle}>
+          Real capture flows will live here. Use the buttons to simulate new entries.
+        </Text>
         <Pressable style={[styles.button, styles.primary]} onPress={handleAddCoupon}>
           <Text style={styles.buttonText}>Add sample coupon</Text>
         </Pressable>

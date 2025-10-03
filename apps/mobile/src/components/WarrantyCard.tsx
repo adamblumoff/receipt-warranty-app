@@ -14,16 +14,24 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 });
 
 const WarrantyCard = ({ warranty, onPress }: WarrantyCardProps): React.ReactElement => {
-  const expiresSoon = new Date(warranty.coverageEndsOn).getTime() - Date.now() < 1000 * 60 * 60 * 24 * 30;
+  const expiresSoon =
+    new Date(warranty.coverageEndsOn).getTime() - Date.now() < 1000 * 60 * 60 * 24 * 30;
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+    >
       <View style={styles.row}>
         <Text style={styles.product}>{warranty.productName}</Text>
         <Text style={[styles.badge, expiresSoon && styles.badgeUrgent]}>Warranty</Text>
       </View>
-      <Text style={styles.meta}>Purchased {dateFormatter.format(new Date(warranty.purchaseDate))} at {warranty.merchant}</Text>
-      <Text style={styles.meta}>Coverage ends {dateFormatter.format(new Date(warranty.coverageEndsOn))}</Text>
+      <Text style={styles.meta}>
+        Purchased {dateFormatter.format(new Date(warranty.purchaseDate))} at {warranty.merchant}
+      </Text>
+      <Text style={styles.meta}>
+        Coverage ends {dateFormatter.format(new Date(warranty.coverageEndsOn))}
+      </Text>
     </Pressable>
   );
 };

@@ -49,7 +49,9 @@ const WarrantyDetailScreen = ({ route }: WarrantyDetailProps): React.ReactElemen
         </View>
         <View style={styles.rowItem}>
           <Text style={styles.label}>Coverage Ends</Text>
-          <Text style={styles.value}>{dateFormatter.format(new Date(warranty.coverageEndsOn))}</Text>
+          <Text style={styles.value}>
+            {dateFormatter.format(new Date(warranty.coverageEndsOn))}
+          </Text>
         </View>
       </View>
       {warranty.coverageNotes ? (

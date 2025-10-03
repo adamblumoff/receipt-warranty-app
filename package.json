@@ -10,7 +10,18 @@
   "scripts": {
     "dev:mobile": "npm run start --workspace @receipt-warranty/mobile",
     "dev:backend": "npm run dev --workspace @receipt-warranty/convex",
-    "lint": "npm run lint --workspace @receipt-warranty/mobile && npm run lint --workspace @receipt-warranty/convex",
+    "lint": "eslint --max-warnings=0 --ext .ts,.tsx apps/mobile/src packages/shared/src convex",
     "test": "npm run test --workspace @receipt-warranty/mobile"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.16.1",
+    "@typescript-eslint/parser": "^7.16.1",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "eslint-plugin-react": "^7.35.0",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-native": "^5.0.0",
+    "prettier": "^3.3.3"
   }
 }

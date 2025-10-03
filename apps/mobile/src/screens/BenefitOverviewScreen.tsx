@@ -7,7 +7,9 @@ import WarrantyCard from '../components/WarrantyCard';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useBenefits } from '../providers/BenefitsProvider';
 
-const BenefitOverviewScreen = ({ navigation }: NativeStackScreenProps<RootStackParamList, 'Wallet'>): React.ReactElement => {
+const BenefitOverviewScreen = ({
+  navigation,
+}: NativeStackScreenProps<RootStackParamList, 'Wallet'>): React.ReactElement => {
   const { coupons, warranties } = useBenefits();
 
   return (
@@ -17,7 +19,11 @@ const BenefitOverviewScreen = ({ navigation }: NativeStackScreenProps<RootStackP
         <Text style={styles.emptyText}>No coupons saved. Add one to avoid missing a deal.</Text>
       ) : (
         coupons.map((coupon) => (
-          <CouponCard key={coupon.id} coupon={coupon} onPress={() => navigation.navigate('CouponDetail', { couponId: coupon.id })} />
+          <CouponCard
+            key={coupon.id}
+            coupon={coupon}
+            onPress={() => navigation.navigate('CouponDetail', { couponId: coupon.id })}
+          />
         ))
       )}
 
@@ -25,7 +31,9 @@ const BenefitOverviewScreen = ({ navigation }: NativeStackScreenProps<RootStackP
 
       <Text style={styles.sectionTitle}>Warranties</Text>
       {warranties.length === 0 ? (
-        <Text style={styles.emptyText}>Track warranties here so you remember coverage windows.</Text>
+        <Text style={styles.emptyText}>
+          Track warranties here so you remember coverage windows.
+        </Text>
       ) : (
         warranties.map((warranty) => (
           <WarrantyCard

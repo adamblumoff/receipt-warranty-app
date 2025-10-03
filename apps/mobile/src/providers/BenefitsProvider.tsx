@@ -30,7 +30,10 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
     setWarranties((current) => [warranty, ...current]);
   }, []);
 
-  const getCouponById = useCallback((id: string) => coupons.find((coupon) => coupon.id === id), [coupons]);
+  const getCouponById = useCallback(
+    (id: string) => coupons.find((coupon) => coupon.id === id),
+    [coupons],
+  );
 
   const getWarrantyById = useCallback(
     (id: string) => warranties.find((warranty) => warranty.id === id),
