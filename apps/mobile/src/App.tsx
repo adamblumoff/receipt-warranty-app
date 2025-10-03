@@ -1,25 +1,17 @@
 import React from 'react';
-import { SafeAreaView, StyleSheet, Text } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-export default function App(): React.ReactElement {
+import AppNavigator from './navigation/AppNavigator';
+import { ReceiptsProvider } from './providers/ReceiptsProvider';
+
+const App = (): React.ReactElement => {
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Receipt & Warranty Vault</Text>
-      <Text>Ready to build the receipt capture flow.</Text>
-    </SafeAreaView>
+    <SafeAreaProvider>
+      <ReceiptsProvider>
+        <AppNavigator />
+      </ReceiptsProvider>
+    </SafeAreaProvider>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-});
+export default App;
