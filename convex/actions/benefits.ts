@@ -1,3 +1,5 @@
+'use node';
+
 interface CouponPayload {
   merchant: string;
   description: string;
