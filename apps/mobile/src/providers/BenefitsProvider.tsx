@@ -1,4 +1,12 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useConvex, useMutation } from 'convex/react';
 import { v4 as uuid } from 'uuid';
 import type { Coupon, Warranty } from '@receipt-warranty/shared';
@@ -78,6 +86,9 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
   const [initializing, setInitializing] = useState(true);
   const [syncing, setSyncing] = useState(false);
 
+  const couponsRef = useRef<Coupon[]>([]);
+  const warrantiesRef = useRef<Warranty[]>([]);
+
   const persist = useCallback(async (next: StoredBenefits) => {
     await saveBenefits(next);
   }, []);
@@ -89,10 +100,14 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
       if (stored) {
         setCoupons(stored.coupons);
         setWarranties(stored.warranties);
+        couponsRef.current = stored.coupons;
+        warrantiesRef.current = stored.warranties;
       } else {
         const sample = getSampleBenefits();
         setCoupons(sample.coupons);
         setWarranties(sample.warranties);
+        couponsRef.current = sample.coupons;
+        warrantiesRef.current = sample.warranties;
         await saveBenefits(sample);
       }
       setHydrated(true);
@@ -102,28 +117,40 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
     void hydrateFromStorage();
   }, []);
 
+  useEffect(() => {
+    couponsRef.current = coupons;
+  }, [coupons]);
+
+  useEffect(() => {
+    warrantiesRef.current = warranties;
+  }, [warranties]);
+
   const fetchRemote = useCallback(async () => {
     setSyncing(true);
     try {
+      let nextCoupons = couponsRef.current;
       const freshCoupons = await convex.query(api.queries.benefits.listCoupons, {});
       if (Array.isArray(freshCoupons)) {
-        const mappedCoupons = (freshCoupons as CouponDoc[]).map(mapCoupon);
-        setCoupons(mappedCoupons);
-        await persist({ coupons: mappedCoupons, warranties });
+        nextCoupons = (freshCoupons as CouponDoc[]).map(mapCoupon);
+        setCoupons(nextCoupons);
+        couponsRef.current = nextCoupons;
       }
 
+      let nextWarranties = warrantiesRef.current;
       const freshWarranties = await convex.query(api.queries.benefits.listWarranties, {});
       if (Array.isArray(freshWarranties)) {
-        const mappedWarranties = (freshWarranties as WarrantyDoc[]).map(mapWarranty);
-        setWarranties(mappedWarranties);
-        await persist({ coupons, warranties: mappedWarranties });
+        nextWarranties = (freshWarranties as WarrantyDoc[]).map(mapWarranty);
+        setWarranties(nextWarranties);
+        warrantiesRef.current = nextWarranties;
       }
+
+      await persist({ coupons: nextCoupons, warranties: nextWarranties });
     } catch (error) {
       console.warn('Failed to fetch benefits from Convex', error);
     } finally {
       setSyncing(false);
     }
-  }, [convex, coupons, persist, warranties]);
+  }, [convex, persist]);
 
   useEffect(() => {
     if (hydrated) {
@@ -143,9 +170,11 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
         createdAt,
       };
 
-      const nextCoupons = [localCoupon, ...coupons];
+      const currentCoupons = couponsRef.current;
+      const nextCoupons = [localCoupon, ...currentCoupons];
       setCoupons(nextCoupons);
-      await persist({ coupons: nextCoupons, warranties });
+      couponsRef.current = nextCoupons;
+      await persist({ coupons: nextCoupons, warranties: warrantiesRef.current });
 
       try {
         await addCouponMutation({
@@ -160,7 +189,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
         console.warn('Failed to sync coupon with Convex', error);
       }
     },
-    [addCouponMutation, coupons, fetchRemote, persist, warranties],
+    [addCouponMutation, fetchRemote, persist],
   );
 
   const addWarranty = useCallback<BenefitsContextValue['addWarranty']>(
@@ -176,9 +205,11 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
         createdAt,
       };
 
-      const nextWarranties = [localWarranty, ...warranties];
+      const currentWarranties = warrantiesRef.current;
+      const nextWarranties = [localWarranty, ...currentWarranties];
       setWarranties(nextWarranties);
-      await persist({ coupons, warranties: nextWarranties });
+      warrantiesRef.current = nextWarranties;
+      await persist({ coupons: couponsRef.current, warranties: nextWarranties });
 
       try {
         await addWarrantyMutation({
@@ -194,7 +225,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
         console.warn('Failed to sync warranty with Convex', error);
       }
     },
-    [addWarrantyMutation, coupons, fetchRemote, persist, warranties],
+    [addWarrantyMutation, fetchRemote, persist],
   );
 
   const getCouponById = useCallback(
@@ -215,6 +246,8 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
     const sample = getSampleBenefits();
     setCoupons(sample.coupons);
     setWarranties(sample.warranties);
+    couponsRef.current = sample.coupons;
+    warrantiesRef.current = sample.warranties;
     await saveBenefits(sample);
   }, []);
 
