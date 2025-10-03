@@ -140,3 +140,6 @@ vite.config.ts.timestamp-*
 # Expo CLI
 .expo/
 apps/mobile/.expo/
+
+# Convex generated files
+convex/_generated/
