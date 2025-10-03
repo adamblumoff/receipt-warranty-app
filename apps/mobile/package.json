@@ -2,19 +2,27 @@
   "name": "@receipt-warranty/mobile",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
-  "main": "App.tsx",
+  "main": "index.ts",
   "scripts": {
-    "start": "npx expo start --clear",
-    "lint": "npx eslint --ext .ts,.tsx src",
-    "test": "npx jest --config jest.config.ts"
+    "start": "expo start --clear",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "jest --config jest.config.ts"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-native": "0.74.0"
+    "expo": "~54.0.12",
+    "expo-dev-client": "^6.0.13",
+    "expo-status-bar": "~3.0.8",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.4",
+    "react-native-web": "^0.21.0"
   },
   "devDependencies": {
-    "@types/react": "^18.2.21",
-    "@types/react-native": "^0.73.0"
+    "@types/jest": "^29.5.12",
+    "@types/react": "~19.1.6",
+    "typescript": "~5.9.2"
   }
 }
