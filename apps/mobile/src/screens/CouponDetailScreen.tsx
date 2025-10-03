@@ -1,6 +1,10 @@
 import React from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type {
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from '@react-navigation/native-stack';
 
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useBenefits } from '../providers/BenefitsProvider';
@@ -15,7 +19,8 @@ type CouponDetailProps = NativeStackScreenProps<RootStackParamList, 'CouponDetai
 
 const CouponDetailScreen = ({ route }: CouponDetailProps): React.ReactElement => {
   const { couponId } = route.params;
-  const { getCouponById } = useBenefits();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { getCouponById, removeCoupon } = useBenefits();
   const coupon = getCouponById(couponId);
 
   React.useEffect(() => {
@@ -52,6 +57,23 @@ const CouponDetailScreen = ({ route }: CouponDetailProps): React.ReactElement =>
           <Text style={styles.body}>{coupon.terms}</Text>
         </View>
       ) : null}
+      <Pressable
+        style={styles.deleteButton}
+        onPress={() => {
+          Alert.alert('Remove coupon', 'Are you sure you want to remove this coupon?', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Delete',
+              style: 'destructive',
+              onPress: () => {
+                void removeCoupon(couponId).then(() => navigation.goBack());
+              },
+            },
+          ]);
+        }}
+      >
+        <Text style={styles.deleteText}>Delete coupon</Text>
+      </Pressable>
     </ScrollView>
   );
 };
@@ -88,6 +110,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: '#4b5563',
+  },
+  deleteButton: {
+    marginTop: 8,
+    backgroundColor: '#fee2e2',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  deleteText: {
+    color: '#b91c1c',
+    fontSize: 16,
+    fontWeight: '600',
   },
   missingContainer: {
     flex: 1,

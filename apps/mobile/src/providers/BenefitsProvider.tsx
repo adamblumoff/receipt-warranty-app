@@ -19,12 +19,16 @@ import {
   type StoredBenefits,
 } from '../services/benefitsStorage';
 
+import type { Id } from '../../../../convex/_generated/dataModel';
+
 interface BenefitsContextValue {
   coupons: Coupon[];
   warranties: Warranty[];
   loading: boolean;
   addCoupon: (coupon: Coupon) => Promise<void>;
   addWarranty: (warranty: Warranty) => Promise<void>;
+  removeCoupon: (couponId: string) => Promise<void>;
+  removeWarranty: (warrantyId: string) => Promise<void>;
   getCouponById: (id: string) => Coupon | undefined;
   getWarrantyById: (id: string) => Warranty | undefined;
   refreshBenefits: () => Promise<void>;
@@ -79,6 +83,8 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
   const convex = useConvex();
   const addCouponMutation = useMutation(api.mutations.benefits.addCoupon);
   const addWarrantyMutation = useMutation(api.mutations.benefits.addWarranty);
+  const deleteCouponMutation = useMutation(api.mutations.benefits.deleteCoupon);
+  const deleteWarrantyMutation = useMutation(api.mutations.benefits.deleteWarranty);
 
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [warranties, setWarranties] = useState<Warranty[]>([]);
@@ -162,7 +168,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
     async (coupon) => {
       const createdAt = coupon.createdAt ?? new Date().toISOString();
       const localCoupon: Coupon = {
-        id: coupon.id ?? uuid(),
+        id: coupon.id ?? `local-${uuid()}`,
         merchant: coupon.merchant,
         description: coupon.description,
         expiresOn: coupon.expiresOn,
@@ -196,7 +202,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
     async (warranty) => {
       const createdAt = warranty.createdAt ?? new Date().toISOString();
       const localWarranty: Warranty = {
-        id: warranty.id ?? uuid(),
+        id: warranty.id ?? `local-${uuid()}`,
         productName: warranty.productName,
         merchant: warranty.merchant,
         purchaseDate: warranty.purchaseDate,
@@ -238,6 +244,44 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
     [warranties],
   );
 
+  const removeCoupon = useCallback<BenefitsContextValue['removeCoupon']>(
+    async (couponId) => {
+      const nextCoupons = couponsRef.current.filter((coupon) => coupon.id !== couponId);
+      setCoupons(nextCoupons);
+      couponsRef.current = nextCoupons;
+      await persist({ coupons: nextCoupons, warranties: warrantiesRef.current });
+
+      if (!couponId.startsWith('local-')) {
+        try {
+          await deleteCouponMutation({ id: couponId as Id<'coupons'> });
+          void fetchRemote();
+        } catch (error) {
+          console.warn('Failed to delete coupon from Convex', error);
+        }
+      }
+    },
+    [deleteCouponMutation, fetchRemote, persist],
+  );
+
+  const removeWarranty = useCallback<BenefitsContextValue['removeWarranty']>(
+    async (warrantyId) => {
+      const nextWarranties = warrantiesRef.current.filter((warranty) => warranty.id !== warrantyId);
+      setWarranties(nextWarranties);
+      warrantiesRef.current = nextWarranties;
+      await persist({ coupons: couponsRef.current, warranties: nextWarranties });
+
+      if (!warrantyId.startsWith('local-')) {
+        try {
+          await deleteWarrantyMutation({ id: warrantyId as Id<'warranties'> });
+          void fetchRemote();
+        } catch (error) {
+          console.warn('Failed to delete warranty from Convex', error);
+        }
+      }
+    },
+    [deleteWarrantyMutation, fetchRemote, persist],
+  );
+
   const refreshBenefits = useCallback(async () => {
     await fetchRemote();
   }, [fetchRemote]);
@@ -258,6 +302,8 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
       loading: initializing || syncing,
       addCoupon,
       addWarranty,
+      removeCoupon,
+      removeWarranty,
       getCouponById,
       getWarrantyById,
       refreshBenefits,
@@ -270,6 +316,8 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
       syncing,
       addCoupon,
       addWarranty,
+      removeCoupon,
+      removeWarranty,
       getCouponById,
       getWarrantyById,
       refreshBenefits,

@@ -1,6 +1,10 @@
 import React from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type {
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from '@react-navigation/native-stack';
 
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useBenefits } from '../providers/BenefitsProvider';
@@ -15,7 +19,8 @@ type WarrantyDetailProps = NativeStackScreenProps<RootStackParamList, 'WarrantyD
 
 const WarrantyDetailScreen = ({ route }: WarrantyDetailProps): React.ReactElement => {
   const { warrantyId } = route.params;
-  const { getWarrantyById } = useBenefits();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { getWarrantyById, removeWarranty } = useBenefits();
   const warranty = getWarrantyById(warrantyId);
 
   React.useEffect(() => {
@@ -60,6 +65,23 @@ const WarrantyDetailScreen = ({ route }: WarrantyDetailProps): React.ReactElemen
           <Text style={styles.body}>{warranty.coverageNotes}</Text>
         </View>
       ) : null}
+      <Pressable
+        style={styles.deleteButton}
+        onPress={() => {
+          Alert.alert('Remove warranty', 'Are you sure you want to remove this warranty?', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Delete',
+              style: 'destructive',
+              onPress: () => {
+                void removeWarranty(warrantyId).then(() => navigation.goBack());
+              },
+            },
+          ]);
+        }}
+      >
+        <Text style={styles.deleteText}>Delete warranty</Text>
+      </Pressable>
     </ScrollView>
   );
 };
@@ -121,6 +143,18 @@ const styles = StyleSheet.create({
   missingText: {
     fontSize: 16,
     color: '#6b7280',
+  },
+  deleteButton: {
+    marginTop: 8,
+    backgroundColor: '#fee2e2',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  deleteText: {
+    color: '#b91c1c',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

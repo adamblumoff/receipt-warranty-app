@@ -46,3 +46,21 @@ export const addWarranty = mutation({
     return await ctx.db.get(id);
   },
 });
+
+export const deleteCoupon = mutation({
+  args: {
+    id: v.id('coupons'),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});
+
+export const deleteWarranty = mutation({
+  args: {
+    id: v.id('warranties'),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});
