@@ -1,12 +1,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Coupon, Warranty } from '@receipt-warranty/shared';
 
+import { mockCoupons, mockWarranties } from '../data/mockBenefits';
+
 const STORAGE_KEY = 'benefit-wallet/v1';
 
 export interface StoredBenefits {
   coupons: Coupon[];
   warranties: Warranty[];
 }
+
+export const getSampleBenefits = (): StoredBenefits => ({
+  coupons: mockCoupons.map((coupon) => ({ ...coupon })),
+  warranties: mockWarranties.map((warranty) => ({ ...warranty })),
+});
 
 export const loadBenefits = async (): Promise<StoredBenefits | undefined> => {
   try {
@@ -24,13 +31,5 @@ export const saveBenefits = async (benefits: StoredBenefits): Promise<void> => {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(benefits));
   } catch (error) {
     console.warn('Failed to persist benefits to storage', error);
-  }
-};
-
-export const clearBenefits = async (): Promise<void> => {
-  try {
-    await AsyncStorage.removeItem(STORAGE_KEY);
-  } catch (error) {
-    console.warn('Failed to clear benefits from storage', error);
   }
 };

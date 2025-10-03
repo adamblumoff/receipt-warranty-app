@@ -1,4 +1,5 @@
-// Placeholder Convex scheduled job for coupon and warranty reminders.
+'use node';
+
 export async function checkExpiringBenefits() {
   console.log('checkExpiringBenefits cron stub');
   // TODO: query coupons/warranties tables and trigger notifications.

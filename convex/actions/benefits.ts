@@ -1,28 +1,50 @@
 'use node';
 
-interface CouponPayload {
-  merchant: string;
-  description: string;
-  expiresOn: string;
-  terms?: string;
-}
+import { mutation } from '../_generated/server';
+import { v } from 'convex/values';
 
-interface WarrantyPayload {
-  productName: string;
-  merchant: string;
-  purchaseDate: string;
-  coverageEndsOn: string;
-  coverageNotes?: string;
-}
+export const addCoupon = mutation({
+  args: {
+    merchant: v.string(),
+    description: v.string(),
+    expiresOn: v.string(),
+    terms: v.optional(v.string()),
+    createdAt: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const createdAt = args.createdAt ?? new Date().toISOString();
+    const id = await ctx.db.insert('coupons', {
+      merchant: args.merchant,
+      description: args.description,
+      expiresOn: args.expiresOn,
+      terms: args.terms,
+      createdAt,
+    });
 
-export async function addCoupon(_args: CouponPayload): Promise<{ success: boolean }> {
-  console.log('addCoupon called', _args);
-  // TODO: replace with Convex mutation once backend wiring is ready.
-  return { success: false };
-}
+    return await ctx.db.get(id);
+  },
+});
 
-export async function addWarranty(_args: WarrantyPayload): Promise<{ success: boolean }> {
-  console.log('addWarranty called', _args);
-  // TODO: replace with Convex mutation once backend wiring is ready.
-  return { success: false };
-}
+export const addWarranty = mutation({
+  args: {
+    productName: v.string(),
+    merchant: v.string(),
+    purchaseDate: v.string(),
+    coverageEndsOn: v.string(),
+    coverageNotes: v.optional(v.string()),
+    createdAt: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const createdAt = args.createdAt ?? new Date().toISOString();
+    const id = await ctx.db.insert('warranties', {
+      productName: args.productName,
+      merchant: args.merchant,
+      purchaseDate: args.purchaseDate,
+      coverageEndsOn: args.coverageEndsOn,
+      coverageNotes: args.coverageNotes,
+      createdAt,
+    });
+
+    return await ctx.db.get(id);
+  },
+});

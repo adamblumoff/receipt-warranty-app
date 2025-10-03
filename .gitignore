@@ -142,5 +142,4 @@ vite.config.ts.timestamp-*
 apps/mobile/.expo/
 
 # Convex generated files
-convex/_generated/
 convex/dist/
