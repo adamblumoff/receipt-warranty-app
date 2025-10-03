@@ -4,6 +4,7 @@ export interface Coupon {
   description: string;
   expiresOn: string;
   terms?: string;
+  createdAt?: string;
 }
 
 export interface Warranty {
@@ -13,4 +14,5 @@ export interface Warranty {
   purchaseDate: string;
   coverageEndsOn: string;
   coverageNotes?: string;
+  createdAt?: string;
 }

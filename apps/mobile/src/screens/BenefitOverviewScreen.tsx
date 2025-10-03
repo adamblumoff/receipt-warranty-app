@@ -1,5 +1,12 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import CouponCard from '../components/CouponCard';
@@ -10,10 +17,22 @@ import { useBenefits } from '../providers/BenefitsProvider';
 const BenefitOverviewScreen = ({
   navigation,
 }: NativeStackScreenProps<RootStackParamList, 'Wallet'>): React.ReactElement => {
-  const { coupons, warranties } = useBenefits();
+  const { coupons, warranties, loading, refreshBenefits } = useBenefits();
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={loading} onRefresh={() => void refreshBenefits()} />
+      }
+    >
+      {loading ? (
+        <View style={styles.statusRow}>
+          <ActivityIndicator size="small" color="#2563eb" />
+          <Text style={styles.statusText}>Syncing wallet…</Text>
+        </View>
+      ) : null}
+
       <Text style={styles.sectionTitle}>Active Coupons</Text>
       {coupons.length === 0 ? (
         <Text style={styles.emptyText}>No coupons saved. Add one to avoid missing a deal.</Text>
@@ -53,6 +72,15 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     backgroundColor: '#f5f5f5',
     gap: 12,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusText: {
+    fontSize: 13,
+    color: '#2563eb',
   },
   sectionTitle: {
     fontSize: 22,
