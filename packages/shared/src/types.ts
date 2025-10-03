@@ -1,7 +1,16 @@
-export interface ReceiptSummary {
+export interface Coupon {
   id: string;
-  vendor: string;
+  merchant: string;
+  description: string;
+  expiresOn: string;
+  terms?: string;
+}
+
+export interface Warranty {
+  id: string;
+  productName: string;
+  merchant: string;
   purchaseDate: string;
-  total: number;
-  warrantyExpiresOn: string;
+  coverageEndsOn: string;
+  coverageNotes?: string;
 }

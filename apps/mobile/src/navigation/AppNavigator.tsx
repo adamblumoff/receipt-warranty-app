@@ -3,14 +3,16 @@ import { Button } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import CaptureReceiptScreen from '../screens/CaptureReceiptScreen';
-import ReceiptDetailScreen from '../screens/ReceiptDetailScreen';
-import ReceiptsListScreen from '../screens/ReceiptsListScreen';
+import AddBenefitScreen from '../screens/AddBenefitScreen';
+import BenefitOverviewScreen from '../screens/BenefitOverviewScreen';
+import CouponDetailScreen from '../screens/CouponDetailScreen';
+import WarrantyDetailScreen from '../screens/WarrantyDetailScreen';
 
 export type RootStackParamList = {
-  Receipts: undefined;
-  ReceiptDetail: { receiptId: string };
-  Capture: undefined;
+  Wallet: undefined;
+  CouponDetail: { couponId: string };
+  WarrantyDetail: { warrantyId: string };
+  AddBenefit: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -18,33 +20,30 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const AppNavigator = (): React.ReactElement => {
   return (
     <NavigationContainer>
-      <Stack.Navigator id={undefined} initialRouteName="Receipts">
+      <Stack.Navigator id={undefined} initialRouteName="Wallet">
         <Stack.Screen
-          name="Receipts"
-          component={ReceiptsListScreen}
+          name="Wallet"
+          component={BenefitOverviewScreen}
           options={({ navigation }) => ({
-            title: 'Receipts',
+            title: 'Benefit Wallet',
             headerTitleAlign: 'center',
-            headerRight: () => (
-              <Button title="Capture" onPress={() => navigation.navigate('Capture')} />
-            ),
+            headerRight: () => <Button title="Add" onPress={() => navigation.navigate('AddBenefit')} />,
           })}
         />
         <Stack.Screen
-          name="ReceiptDetail"
-          component={ReceiptDetailScreen}
-          options={{
-            title: 'Receipt Details',
-            headerTitleAlign: 'center',
-          }}
+          name="CouponDetail"
+          component={CouponDetailScreen}
+          options={{ title: 'Coupon Details', headerTitleAlign: 'center' }}
         />
         <Stack.Screen
-          name="Capture"
-          component={CaptureReceiptScreen}
-          options={{
-            title: 'Capture Receipt',
-            headerTitleAlign: 'center',
-          }}
+          name="WarrantyDetail"
+          component={WarrantyDetailScreen}
+          options={{ title: 'Warranty Details', headerTitleAlign: 'center' }}
+        />
+        <Stack.Screen
+          name="AddBenefit"
+          component={AddBenefitScreen}
+          options={{ title: 'Add Benefit', headerTitleAlign: 'center' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

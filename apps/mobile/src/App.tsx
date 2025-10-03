@@ -2,14 +2,14 @@ import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import AppNavigator from './navigation/AppNavigator';
-import { ReceiptsProvider } from './providers/ReceiptsProvider';
+import { BenefitsProvider } from './providers/BenefitsProvider';
 
 const App = (): React.ReactElement => {
   return (
     <SafeAreaProvider>
-      <ReceiptsProvider>
+      <BenefitsProvider>
         <AppNavigator />
-      </ReceiptsProvider>
+      </BenefitsProvider>
     </SafeAreaProvider>
   );
 };
