@@ -1,0 +1,16 @@
+{
+  "name": "receipt-warranty-app",
+  "private": true,
+  "packageManager": "npm@10.8.1",
+  "workspaces": [
+    "apps/mobile",
+    "convex",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev:mobile": "npm run start --workspace @receipt-warranty/mobile",
+    "dev:backend": "npm run dev --workspace @receipt-warranty/convex",
+    "lint": "npm run lint --workspace @receipt-warranty/mobile && npm run lint --workspace @receipt-warranty/convex",
+    "test": "npm run test --workspace @receipt-warranty/mobile"
+  }
+}

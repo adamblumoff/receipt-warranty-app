@@ -1,0 +1,20 @@
+{
+  "name": "@receipt-warranty/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "App.tsx",
+  "scripts": {
+    "start": "npx expo start --clear",
+    "lint": "npx eslint --ext .ts,.tsx src",
+    "test": "npx jest --config jest.config.ts"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-native": "0.74.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.21",
+    "@types/react-native": "^0.73.0"
+  }
+}
