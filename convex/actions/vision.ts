@@ -294,38 +294,75 @@ const extractFields = (
   let expiresCandidate: string | undefined;
   let expiresContext = 0.4;
   for (const line of lines) {
-    const match = line.match(DATE_REGEX);
-    if (!match) {
+    const matches = Array.from(line.matchAll(DATE_REGEX)) ?? [];
+    if (matches.length === 0) {
       continue;
     }
-    const iso = parseIsoDate(match[0]);
-    if (!iso) {
+    const isoValues = matches
+      .map((match) => parseIsoDate(match[0]))
+      .filter((value): value is string => Boolean(value));
+    if (isoValues.length === 0) {
       continue;
     }
-    const confidence = scoreForContext(line, ['expire', 'valid', 'thru', 'until', 'redeem']);
-    if (!expiresCandidate || confidence > expiresContext) {
-      expiresCandidate = iso;
+    const confidence = scoreForContext(line, [
+      'expire',
+      'valid',
+      'thru',
+      'through',
+      'until',
+      'redeem',
+    ]);
+    const candidateIso = /thru|through|until/i.test(line)
+      ? isoValues.reduce((latest, current) => (current > latest ? current : latest), isoValues[0])
+      : isoValues[0];
+
+    if (
+      !expiresCandidate ||
+      confidence > expiresContext ||
+      (confidence === expiresContext && candidateIso > (fields.expiresOn?.value ?? ''))
+    ) {
+      expiresCandidate = candidateIso;
       expiresContext = confidence;
-      fields.expiresOn = buildField(iso, confidence, line);
+      fields.expiresOn = buildField(candidateIso, confidence, line);
     }
   }
 
   let purchaseCandidate: string | undefined;
   let purchaseConfidence = 0.4;
   for (const line of lines) {
-    const match = line.match(DATE_REGEX);
-    if (!match) {
+    const matches = Array.from(line.matchAll(DATE_REGEX)) ?? [];
+    if (matches.length === 0) {
       continue;
     }
-    const iso = parseIsoDate(match[0]);
-    if (!iso) {
+    const isoValues = matches
+      .map((match) => parseIsoDate(match[0]))
+      .filter((value): value is string => Boolean(value));
+    if (isoValues.length === 0) {
       continue;
     }
-    const confidence = scoreForContext(line, ['purchase', 'bought', 'order', 'date', 'issued']);
-    if (!purchaseCandidate || confidence > purchaseConfidence) {
-      purchaseCandidate = iso;
+    const confidence = scoreForContext(line, [
+      'purchase',
+      'purchased',
+      'bought',
+      'order',
+      'date',
+      'issued',
+    ]);
+    const candidateIso = /thru|through|until/i.test(line)
+      ? isoValues[0]
+      : isoValues.reduce(
+          (earliest, current) => (current < earliest ? current : earliest),
+          isoValues[0],
+        );
+
+    if (
+      !purchaseCandidate ||
+      confidence > purchaseConfidence ||
+      (confidence === purchaseConfidence && candidateIso < (fields.purchaseDate?.value ?? ''))
+    ) {
+      purchaseCandidate = candidateIso;
       purchaseConfidence = confidence;
-      fields.purchaseDate = buildField(iso, confidence, line);
+      fields.purchaseDate = buildField(candidateIso, confidence, line);
     }
   }
 
