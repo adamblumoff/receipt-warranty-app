@@ -4,6 +4,20 @@ import { action } from '../_generated/server';
 import { v } from 'convex/values';
 import { ConvexError } from 'convex/values';
 import { ImageAnnotatorClient } from '@google-cloud/vision';
+import { Jimp } from 'jimp';
+
+type PreprocessedImage = {
+  bitmap: {
+    width: number;
+    height: number;
+  };
+  scaleToFit: (w: number, h: number, mode?: unknown) => PreprocessedImage;
+  normalize: () => PreprocessedImage;
+  contrast: (value: number) => PreprocessedImage;
+  greyscale: () => PreprocessedImage;
+  quality: (value: number) => PreprocessedImage;
+  getBufferAsync: (mime: string) => Promise<Buffer>;
+};
 import type {
   BenefitType,
   VisionAnalysisResult,
@@ -41,14 +55,94 @@ const resolveVisionClient = (): ImageAnnotatorClient => {
   const projectId = ensureEnv('GOOGLE_VISION_PROJECT_ID');
 
   cachedClient = new ImageAnnotatorClient({
+    projectId,
     credentials: {
       client_email: clientEmail,
       private_key: privateKey,
     },
-    projectId,
   });
 
   return cachedClient;
+};
+
+const preprocessImage = async (buffer: Buffer): Promise<Buffer> => {
+  try {
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
+    const image = (await Jimp.read(buffer)) as unknown as PreprocessedImage;
+    const needsUpscale = image.bitmap.width < 960 && image.bitmap.height < 960;
+    if (needsUpscale) {
+      image.scaleToFit(1280, 1280, Jimp.RESIZE_BICUBIC);
+    }
+    image.normalize().contrast(0.15).greyscale();
+    return await image.quality(90).getBufferAsync(Jimp.MIME_JPEG);
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
+  } catch (error) {
+    console.warn('Vision preprocessing skipped', error);
+    return buffer;
+  }
+};
+
+const extractMultipartFile = (
+  buffer: Buffer,
+  contentType?: string,
+): { file: Buffer; inferredType?: string } | null => {
+  if (!contentType || !contentType.includes('multipart/form-data')) {
+    return null;
+  }
+  const boundaryMatch = /boundary=([^;]+)/i.exec(contentType);
+  if (!boundaryMatch) {
+    return null;
+  }
+  const boundary = boundaryMatch[1];
+  const sections = buffer.toString('latin1').split(`--${boundary}`);
+  for (const section of sections) {
+    if (!section.includes('Content-Disposition')) {
+      continue;
+    }
+    const [rawHeaders, rawBody] = section.split('\r\n\r\n');
+    if (!rawBody) {
+      continue;
+    }
+    const headerText = rawHeaders.trim();
+    const detectedTypeMatch = /Content-Type:\s*([^\r\n]+)/i.exec(headerText);
+    const bodyWithoutClosing = rawBody.replace(/\r\n--$/m, '').replace(/\r\n$/m, '');
+    const file = Buffer.from(bodyWithoutClosing, 'latin1');
+    return { file, inferredType: detectedTypeMatch?.[1]?.trim() };
+  }
+  return null;
+};
+
+const runDetection = async (
+  client: ImageAnnotatorClient,
+  content: Buffer,
+  label: string,
+): Promise<{
+  rawText: string;
+  textAnnotations: number;
+  pages: number;
+}> => {
+  const [textDetection] = await client.textDetection({
+    image: { content },
+    imageContext: { languageHints: ['en'] },
+  });
+  const [documentDetection] = await client.documentTextDetection({
+    image: { content },
+    imageContext: { languageHints: ['en'] },
+  });
+  if (textDetection.error) {
+    console.warn('Vision textDetection error', label, textDetection.error);
+  }
+  if (documentDetection.error) {
+    console.warn('Vision documentDetection error', label, documentDetection.error);
+  }
+  const annotation = textDetection.fullTextAnnotation ?? documentDetection.fullTextAnnotation;
+  const rawText = annotation?.text ?? textDetection.textAnnotations?.[0]?.description ?? '';
+
+  return {
+    rawText,
+    textAnnotations: textDetection.textAnnotations?.length ?? 0,
+    pages: annotation?.pages?.length ?? 0,
+  };
 };
 
 const DATE_REGEX =
@@ -187,19 +281,31 @@ export const analyzeBenefitImage = action({
     }
 
     const arrayBuffer = await blob.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    let originalBuffer = Buffer.from(arrayBuffer);
+    let detectedContentType = blob.type;
+
+    const multipart = extractMultipartFile(originalBuffer, blob.type);
+    if (multipart) {
+      originalBuffer = multipart.file;
+      detectedContentType = multipart.inferredType ?? detectedContentType;
+    }
+
+    const processedBuffer = await preprocessImage(originalBuffer);
 
     const client = resolveVisionClient();
 
-    const [textDetection] = await client.textDetection({
-      image: { content: buffer },
-    });
-    const [documentDetection] = await client.documentTextDetection({
-      image: { content: buffer },
-    });
+    let { rawText, textAnnotations, pages } = await runDetection(
+      client,
+      processedBuffer,
+      'processed',
+    );
+    if (!rawText.trim()) {
+      const fallback = await runDetection(client, originalBuffer, 'original');
+      rawText = fallback.rawText;
+      textAnnotations = fallback.textAnnotations;
+      pages = fallback.pages;
+    }
 
-    const annotation = textDetection.fullTextAnnotation ?? documentDetection.fullTextAnnotation;
-    const rawText = annotation?.text ?? textDetection.textAnnotations?.[0]?.description ?? '';
     if (!rawText.trim()) {
       return {
         storageId: args.storageId,
@@ -208,6 +314,14 @@ export const analyzeBenefitImage = action({
         lines: [],
         fields: {},
         warnings: ['No text detected in image'],
+        debug: {
+          contentType: detectedContentType,
+          originalSize: originalBuffer.length,
+          processedSize: processedBuffer.length,
+          textAnnotations,
+          documentPages: pages,
+          multipartDecoded: Boolean(multipart),
+        },
       };
     }
 

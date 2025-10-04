@@ -40,6 +40,7 @@ export interface VisionAnalysisResult {
     totalAmount?: VisionFieldSuggestion<number>;
   };
   warnings: string[];
+  debug?: Record<string, unknown>;
 }
 
 export interface AnalyzeBenefitImageParams {
