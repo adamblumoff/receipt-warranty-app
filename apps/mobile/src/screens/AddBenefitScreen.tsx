@@ -14,11 +14,24 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system/legacy';
 import { v4 as uuid } from 'uuid';
 
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useBenefits } from '../providers/BenefitsProvider';
 import type { BenefitType, VisionAnalysisResult } from '@receipt-warranty/shared';
+const logTiming = (label: string, start: number): void => {
+  const duration = Date.now() - start;
+  console.log(`⏱️ ${label}: ${duration}ms`);
+};
+
+const logEvent = (label: string, context?: Record<string, unknown>): void => {
+  if (context) {
+    console.log(`[${label}]`, context);
+  } else {
+    console.log(`[${label}]`);
+  }
+};
 
 const EMPTY_COUPON = {
   merchant: '',
@@ -77,10 +90,15 @@ const AddBenefitScreen = (): React.ReactElement => {
       quality: 0.8,
     };
 
+    const overallStart = Date.now();
+    logEvent('vision:start', { source });
+
+    const pickerStart = Date.now();
     const pickerResult =
       source === 'library'
         ? await ImagePicker.launchImageLibraryAsync(pickerOptions)
         : await ImagePicker.launchCameraAsync(pickerOptions);
+    logTiming('picker', pickerStart);
 
     if (pickerResult.canceled || !pickerResult.assets?.length) {
       return;
@@ -91,24 +109,49 @@ const AddBenefitScreen = (): React.ReactElement => {
     let mimeType = asset.mimeType ?? 'image/jpeg';
 
     try {
-      const manipulated = await ImageManipulator.manipulateAsync(asset.uri, [], {
-        compress: 0.85,
+      const transcodeStart = Date.now();
+      const maxDimension = 1280;
+      const actions: ImageManipulator.Action[] = [];
+      if (asset.width && asset.height) {
+        const longestEdge = Math.max(asset.width, asset.height);
+        if (longestEdge > maxDimension) {
+          const scale = maxDimension / longestEdge;
+          actions.push({
+            resize: {
+              width: Math.round(asset.width * scale),
+              height: Math.round(asset.height * scale),
+            },
+          });
+        }
+      }
+      const manipulated = await ImageManipulator.manipulateAsync(asset.uri, actions, {
+        compress: 0.6,
         format: ImageManipulator.SaveFormat.JPEG,
       });
       workingUri = manipulated.uri;
       mimeType = 'image/jpeg';
+      logTiming('transcode', transcodeStart);
+      const info = await FileSystem.getInfoAsync(workingUri);
+      logEvent('vision:transcoded', {
+        uri: workingUri,
+        width: manipulated.width,
+        height: manipulated.height,
+        size: info.exists ? info.size : undefined,
+      });
     } catch (manipulationError) {
       console.warn('Image manipulation skipped', manipulationError);
     }
 
     setAnalyzing(true);
     try {
+      const visionStart = Date.now();
       const visionResult = await analyzeBenefitImage({
         uri: workingUri,
         mimeType,
         benefitType: mode,
         originalFileName: asset.fileName,
       });
+      logTiming('vision', visionStart);
       setAnalysis(visionResult);
 
       if (mode === 'coupon') {
@@ -131,6 +174,7 @@ const AddBenefitScreen = (): React.ReactElement => {
       console.warn('Vision analysis failed', error);
       Alert.alert('Unable to analyze image', 'Please try again with a clearer photo.');
     } finally {
+      logTiming('overall', overallStart);
       setAnalyzing(false);
     }
   };

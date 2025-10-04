@@ -28,6 +28,19 @@ import {
 
 import type { Id } from '../../../../convex/_generated/dataModel';
 
+const logTiming = (label: string, start: number): void => {
+  const duration = Date.now() - start;
+  console.log(`⏱️ [provider:${label}] ${duration}ms`);
+};
+
+const logEvent = (label: string, context?: Record<string, unknown>): void => {
+  if (context) {
+    console.log(`[provider:${label}]`, context);
+  } else {
+    console.log(`[provider:${label}]`);
+  }
+};
+
 interface BenefitsContextValue {
   coupons: Coupon[];
   warranties: Warranty[];
@@ -306,7 +319,11 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
 
   const analyzeBenefitImage = useCallback<BenefitsContextValue['analyzeBenefitImage']>(
     async ({ uri, mimeType, benefitType }) => {
+      const overallStart = Date.now();
+      const uploadStart = Date.now();
       const uploadUrl = await generateUploadUrl({});
+      const fileInfo = await FileSystem.getInfoAsync(uri);
+      logEvent('file:selected', { uri, size: fileInfo.exists ? fileInfo.size : undefined });
       /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
       const uploadResponse = await FileSystem.uploadAsync(uploadUrl, uri, {
         httpMethod: 'POST',
@@ -320,6 +337,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
           0,
       });
       /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
+      logTiming('upload', uploadStart);
 
       if (uploadResponse.status !== 200 || !uploadResponse.body) {
         throw new Error(`Upload failed with status ${uploadResponse.status}`);
@@ -330,6 +348,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
         throw new Error('Convex upload response missing storageId');
       }
 
+      const visionStart = Date.now();
       const analysis = (await convex.action(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
         api['actions/vision'].analyzeBenefitImage,
@@ -338,6 +357,8 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
           analyzeAs: benefitType,
         },
       )) as VisionAnalysisResult;
+      logTiming('vision', visionStart);
+      logTiming('total', overallStart);
 
       return analysis;
     },
