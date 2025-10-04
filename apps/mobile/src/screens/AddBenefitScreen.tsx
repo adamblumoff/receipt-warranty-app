@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { v4 as uuid } from 'uuid';
 
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -86,12 +87,24 @@ const AddBenefitScreen = (): React.ReactElement => {
     }
 
     const asset = pickerResult.assets[0];
-    const mimeType = asset.mimeType ?? 'image/jpeg';
+    let workingUri = asset.uri;
+    let mimeType = asset.mimeType ?? 'image/jpeg';
+
+    try {
+      const manipulated = await ImageManipulator.manipulateAsync(asset.uri, [], {
+        compress: 0.85,
+        format: ImageManipulator.SaveFormat.JPEG,
+      });
+      workingUri = manipulated.uri;
+      mimeType = 'image/jpeg';
+    } catch (manipulationError) {
+      console.warn('Image manipulation skipped', manipulationError);
+    }
 
     setAnalyzing(true);
     try {
       const visionResult = await analyzeBenefitImage({
-        uri: asset.uri,
+        uri: workingUri,
         mimeType,
         benefitType: mode,
         originalFileName: asset.fileName,
