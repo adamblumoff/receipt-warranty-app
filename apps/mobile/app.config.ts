@@ -27,12 +27,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     assetBundlePatterns: ['**/*'],
     ios: {
       supportsTablet: true,
+      bundleIdentifier: 'com.adamblumoff.receiptwarrantyapp',
     },
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
         backgroundColor: '#ffffff',
       },
+      package: 'com.adamblumoff.receiptwarrantyapp',
     },
     web: {
       bundler: 'metro',
