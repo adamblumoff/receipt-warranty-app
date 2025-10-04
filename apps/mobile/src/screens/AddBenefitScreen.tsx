@@ -64,6 +64,19 @@ const toIsoOrEmpty = (value?: string | number | Date): string => {
   return toUtcMiddayIso(date);
 };
 
+const toDisplayDate = (iso: string): Date | null => {
+  if (!iso) {
+    return null;
+  }
+  const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) {
+    const parsed = new Date(iso);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  const [, year, month, day] = match;
+  return new Date(Number(year), Number(month) - 1, Number(day));
+};
+
 const toUtcMiddayIso = (date: Date): string =>
   new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0)).toISOString();
 
@@ -93,8 +106,8 @@ const AddBenefitScreen = (): React.ReactElement => {
     if (!couponForm.expiresOn) {
       return 'Select date';
     }
-    const date = new Date(couponForm.expiresOn);
-    if (Number.isNaN(date.getTime())) {
+    const date = toDisplayDate(couponForm.expiresOn);
+    if (!date) {
       return 'Select date';
     }
     return new Intl.DateTimeFormat(undefined, {
