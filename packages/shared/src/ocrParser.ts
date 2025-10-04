@@ -31,7 +31,7 @@ const parseIsoDate = (candidate: string | undefined): string | undefined => {
     if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
       return undefined;
     }
-    const normalized = new Date(Date.UTC(year, month - 1, day));
+    const normalized = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
     if (Number.isNaN(normalized.getTime())) {
       return undefined;
     }
@@ -43,7 +43,7 @@ const parseIsoDate = (candidate: string | undefined): string | undefined => {
     return undefined;
   }
   return new Date(
-    Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()),
+    Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 12, 0, 0),
   ).toISOString();
 };
 

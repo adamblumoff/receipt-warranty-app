@@ -496,7 +496,7 @@ export const analyzeBenefitImage = action({
     }
 
     const arrayBuffer = await blob.arrayBuffer();
-    let originalBuffer = Buffer.from(arrayBuffer);
+    let originalBuffer: Buffer = Buffer.from(arrayBuffer);
     let detectedContentType = blob.type;
 
     const multipart = extractMultipartFile(originalBuffer, blob.type);
