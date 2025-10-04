@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -64,6 +64,9 @@ const toIsoOrEmpty = (value?: string | number | Date): string => {
   return date.toISOString();
 };
 
+const toUtcIsoDate = (date: Date): string =>
+  new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())).toISOString();
+
 const AddBenefitScreen = (): React.ReactElement => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { addCoupon, addWarranty, analyzeBenefitImage } = useBenefits();
@@ -86,7 +89,7 @@ const AddBenefitScreen = (): React.ReactElement => {
     }
   }, [couponForm.expiresOn]);
 
-  const getCouponExpiryDisplay = (): string => {
+  const couponExpiryDisplay = useMemo(() => {
     if (!couponForm.expiresOn) {
       return 'Select date';
     }
@@ -99,7 +102,7 @@ const AddBenefitScreen = (): React.ReactElement => {
       month: 'short',
       day: 'numeric',
     }).format(date);
-  };
+  }, [couponForm.expiresOn]);
 
   const openCouponDatePicker = () => {
     const initial = couponForm.expiresOn ? new Date(couponForm.expiresOn) : new Date();
@@ -111,7 +114,7 @@ const AddBenefitScreen = (): React.ReactElement => {
           if (selectedDate) {
             setCouponForm((prev) => ({
               ...prev,
-              expiresOn: selectedDate.toISOString(),
+              expiresOn: toUtcIsoDate(selectedDate),
             }));
           }
         },
@@ -131,7 +134,7 @@ const AddBenefitScreen = (): React.ReactElement => {
   const confirmCouponDate = () => {
     setCouponForm((prev) => ({
       ...prev,
-      expiresOn: couponDateDraft.toISOString(),
+      expiresOn: toUtcIsoDate(couponDateDraft),
     }));
     setCouponDatePickerVisible(false);
   };
@@ -139,34 +142,6 @@ const AddBenefitScreen = (): React.ReactElement => {
   const cancelCouponDate = () => {
     setCouponDatePickerVisible(false);
   };
-
-  const iosCouponDatePicker =
-    couponDatePickerVisible && Platform.OS === 'ios' ? (
-      <Modal transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <DateTimePicker
-              value={couponDateDraft}
-              mode="date"
-              display="spinner"
-              onChange={handleIosCouponDateChange}
-              style={styles.iosPicker}
-            />
-            <View style={styles.modalActions}>
-              <Pressable style={styles.modalButton} onPress={cancelCouponDate}>
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.modalButton, styles.modalPrimaryButton]}
-                onPress={confirmCouponDate}
-              >
-                <Text style={[styles.modalButtonText, styles.modalPrimaryButtonText]}>Done</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    ) : null;
 
   const handleAnalyzeImage = async (source: 'library' | 'camera') => {
     if (source === 'library') {
@@ -353,7 +328,7 @@ const AddBenefitScreen = (): React.ReactElement => {
       <Text style={styles.label}>Expires On</Text>
       <Pressable style={[styles.input, styles.dateInput]} onPress={openCouponDatePicker}>
         <Text style={couponForm.expiresOn ? styles.dateInputText : styles.dateInputPlaceholder}>
-          {getCouponExpiryDisplay()}
+          {couponExpiryDisplay}
         </Text>
       </Pressable>
       <Text style={styles.label}>Terms (optional)</Text>
@@ -412,7 +387,38 @@ const AddBenefitScreen = (): React.ReactElement => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {iosCouponDatePicker}
+      {Platform.OS === 'ios' ? (
+        <Modal
+          transparent
+          animationType="slide"
+          visible={couponDatePickerVisible}
+          onRequestClose={cancelCouponDate}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <DateTimePicker
+                value={couponDateDraft}
+                mode="date"
+                display="spinner"
+                onChange={handleIosCouponDateChange}
+                style={styles.iosPicker}
+                textColor="#111827"
+              />
+              <View style={styles.modalActions}>
+                <Pressable style={styles.modalButton} onPress={cancelCouponDate}>
+                  <Text style={styles.modalButtonText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.modalButton, styles.modalPrimaryButton]}
+                  onPress={confirmCouponDate}
+                >
+                  <Text style={[styles.modalButtonText, styles.modalPrimaryButtonText]}>Done</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Add a benefit</Text>
         <Text style={styles.subtitle}>
@@ -496,7 +502,7 @@ const AddBenefitScreen = (): React.ReactElement => {
               <Text style={styles.previewLine}>Merchant: {couponForm.merchant || '—'}</Text>
               <Text style={styles.previewLine}>Description: {couponForm.description || '—'}</Text>
               <Text style={styles.previewLine}>
-                Expires: {couponForm.expiresOn ? getCouponExpiryDisplay() : '—'}
+                Expires: {couponForm.expiresOn ? couponExpiryDisplay : '—'}
               </Text>
             </>
           ) : (
@@ -712,6 +718,7 @@ const styles = StyleSheet.create({
   },
   iosPicker: {
     alignSelf: 'stretch',
+    height: 220,
   },
 });
 
