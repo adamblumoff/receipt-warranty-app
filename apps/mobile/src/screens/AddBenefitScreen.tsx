@@ -65,7 +65,7 @@ const toIsoOrEmpty = (value?: string | number | Date): string => {
 };
 
 const toUtcIsoDate = (date: Date): string =>
-  new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())).toISOString();
+  new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0)).toISOString();
 
 const AddBenefitScreen = (): React.ReactElement => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
