@@ -300,7 +300,7 @@ const parseIsoDate = (candidate: string | undefined): string | undefined => {
     return undefined;
   }
   return new Date(
-    Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()),
+    Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 12, 0, 0),
   ).toISOString();
 };
 

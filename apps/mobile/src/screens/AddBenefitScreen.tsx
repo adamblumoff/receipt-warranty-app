@@ -61,10 +61,10 @@ const toIsoOrEmpty = (value?: string | number | Date): string => {
   if (Number.isNaN(date.getTime())) {
     return '';
   }
-  return date.toISOString();
+  return toUtcMiddayIso(date);
 };
 
-const toUtcIsoDate = (date: Date): string =>
+const toUtcMiddayIso = (date: Date): string =>
   new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0)).toISOString();
 
 const AddBenefitScreen = (): React.ReactElement => {
@@ -114,7 +114,7 @@ const AddBenefitScreen = (): React.ReactElement => {
           if (selectedDate) {
             setCouponForm((prev) => ({
               ...prev,
-              expiresOn: toUtcIsoDate(selectedDate),
+              expiresOn: toUtcMiddayIso(selectedDate),
             }));
           }
         },
@@ -134,7 +134,7 @@ const AddBenefitScreen = (): React.ReactElement => {
   const confirmCouponDate = () => {
     setCouponForm((prev) => ({
       ...prev,
-      expiresOn: toUtcIsoDate(couponDateDraft),
+      expiresOn: toUtcMiddayIso(couponDateDraft),
     }));
     setCouponDatePickerVisible(false);
   };
