@@ -1,69 +1,323 @@
-import React from 'react';
-import { Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import * as ImagePicker from 'expo-image-picker';
 import { v4 as uuid } from 'uuid';
 
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useBenefits } from '../providers/BenefitsProvider';
+import type { BenefitType, VisionAnalysisResult } from '@receipt-warranty/shared';
+
+const EMPTY_COUPON = {
+  merchant: '',
+  description: '',
+  expiresOn: '',
+  terms: '',
+};
+
+const EMPTY_WARRANTY = {
+  productName: '',
+  merchant: '',
+  purchaseDate: '',
+  coverageEndsOn: '',
+  coverageNotes: '',
+};
+
+const toIsoOrEmpty = (value?: string | number | Date): string => {
+  if (!value) {
+    return '';
+  }
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return date.toISOString();
+};
 
 const AddBenefitScreen = (): React.ReactElement => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { addCoupon, addWarranty } = useBenefits();
+  const { addCoupon, addWarranty, analyzeBenefitImage } = useBenefits();
 
-  const handleAddCoupon = async () => {
-    const now = new Date();
-    await addCoupon({
-      id: uuid(),
-      merchant: 'Local Coffee Club',
-      description: 'Buy one get one free drink',
-      expiresOn: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 10).toISOString(),
-      terms: 'Limit one per visit; valid on handcrafted beverages.',
-      createdAt: now.toISOString(),
+  const [mode, setMode] = useState<BenefitType>('coupon');
+  const [couponForm, setCouponForm] = useState(EMPTY_COUPON);
+  const [warrantyForm, setWarrantyForm] = useState(EMPTY_WARRANTY);
+  const [analysis, setAnalysis] = useState<VisionAnalysisResult | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleAnalyzeImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission required', 'Media library access is needed to scan an image.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
     });
-    Alert.alert('Coupon saved', 'Sample coupon added to your wallet.');
-    navigation.navigate('Wallet');
+
+    if (result.canceled || !result.assets?.length) {
+      return;
+    }
+
+    const asset = result.assets[0];
+    const mimeType = asset.mimeType ?? 'image/jpeg';
+
+    setAnalyzing(true);
+    try {
+      const visionResult = await analyzeBenefitImage({
+        uri: asset.uri,
+        mimeType,
+        benefitType: mode,
+        originalFileName: asset.fileName,
+      });
+      setAnalysis(visionResult);
+
+      if (mode === 'coupon') {
+        setCouponForm((prev) => ({
+          merchant: visionResult.fields.merchant?.value ?? prev.merchant,
+          description: visionResult.fields.description?.value ?? prev.description,
+          expiresOn: visionResult.fields.expiresOn?.value ?? prev.expiresOn,
+          terms: prev.terms,
+        }));
+      } else {
+        setWarrantyForm((prev) => ({
+          productName: visionResult.fields.productName?.value ?? prev.productName,
+          merchant: visionResult.fields.merchant?.value ?? prev.merchant,
+          purchaseDate: visionResult.fields.purchaseDate?.value ?? prev.purchaseDate,
+          coverageEndsOn: visionResult.fields.coverageEndsOn?.value ?? prev.coverageEndsOn,
+          coverageNotes: prev.coverageNotes,
+        }));
+      }
+    } catch (error) {
+      console.warn('Vision analysis failed', error);
+      Alert.alert('Unable to analyze image', 'Please try again with a clearer photo.');
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
-  const handleAddWarranty = async () => {
-    const now = new Date();
-    await addWarranty({
-      id: uuid(),
-      productName: 'Smart Home Hub',
-      merchant: 'HomeTech Warranty',
-      purchaseDate: now.toISOString(),
-      coverageEndsOn: new Date(now.getFullYear() + 2, now.getMonth(), now.getDate()).toISOString(),
-      coverageNotes: 'File claims via hometechwarranty.com with your serial number.',
-      createdAt: now.toISOString(),
-    });
-    Alert.alert('Warranty saved', 'Sample warranty added to your wallet.');
-    navigation.navigate('Wallet');
+  const handleSave = async () => {
+    setSubmitting(true);
+    try {
+      if (mode === 'coupon') {
+        const { merchant, description, expiresOn, terms } = couponForm;
+        if (!merchant || !description || !expiresOn) {
+          Alert.alert(
+            'Missing info',
+            'Merchant, description, and expiration are required for coupons.',
+          );
+          return;
+        }
+        await addCoupon({
+          id: uuid(),
+          merchant,
+          description,
+          expiresOn,
+          terms: terms || undefined,
+          createdAt: new Date().toISOString(),
+        });
+      } else {
+        const { productName, merchant, purchaseDate, coverageEndsOn, coverageNotes } = warrantyForm;
+        if (!productName || !merchant || !purchaseDate || !coverageEndsOn) {
+          Alert.alert(
+            'Missing info',
+            'Please provide product, merchant, purchase date, and coverage end.',
+          );
+          return;
+        }
+        await addWarranty({
+          id: uuid(),
+          productName,
+          merchant,
+          purchaseDate,
+          coverageEndsOn,
+          coverageNotes: coverageNotes || undefined,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      Alert.alert('Saved', 'Benefit added to your wallet.');
+      navigation.navigate('Wallet');
+      setCouponForm(EMPTY_COUPON);
+      setWarrantyForm(EMPTY_WARRANTY);
+      setAnalysis(null);
+    } catch (error) {
+      console.warn('Failed to save benefit', error);
+      Alert.alert('Unable to save', 'Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  const renderCouponFields = () => (
+    <View style={styles.section}>
+      <Text style={styles.label}>Merchant</Text>
+      <TextInput
+        style={styles.input}
+        value={couponForm.merchant}
+        onChangeText={(merchant) => setCouponForm((prev) => ({ ...prev, merchant }))}
+        placeholder="Coffee Spot"
+      />
+      <Text style={styles.label}>Description</Text>
+      <TextInput
+        style={[styles.input, styles.multiline]}
+        multiline
+        value={couponForm.description}
+        onChangeText={(description) => setCouponForm((prev) => ({ ...prev, description }))}
+        placeholder="Buy one get one free latte"
+      />
+      <Text style={styles.label}>Expires On</Text>
+      <TextInput
+        style={styles.input}
+        value={couponForm.expiresOn}
+        onChangeText={(expiresOn) => setCouponForm((prev) => ({ ...prev, expiresOn }))}
+        placeholder="2025-12-31T00:00:00.000Z"
+        autoCapitalize="none"
+      />
+      <Text style={styles.label}>Terms (optional)</Text>
+      <TextInput
+        style={[styles.input, styles.multiline]}
+        multiline
+        value={couponForm.terms}
+        onChangeText={(terms) => setCouponForm((prev) => ({ ...prev, terms }))}
+        placeholder="Limit one per visit"
+      />
+    </View>
+  );
+
+  const renderWarrantyFields = () => (
+    <View style={styles.section}>
+      <Text style={styles.label}>Product Name</Text>
+      <TextInput
+        style={styles.input}
+        value={warrantyForm.productName}
+        onChangeText={(productName) => setWarrantyForm((prev) => ({ ...prev, productName }))}
+        placeholder="4K TV"
+      />
+      <Text style={styles.label}>Merchant</Text>
+      <TextInput
+        style={styles.input}
+        value={warrantyForm.merchant}
+        onChangeText={(merchant) => setWarrantyForm((prev) => ({ ...prev, merchant }))}
+        placeholder="Electronics World"
+      />
+      <Text style={styles.label}>Purchase Date</Text>
+      <TextInput
+        style={styles.input}
+        value={warrantyForm.purchaseDate}
+        onChangeText={(purchaseDate) => setWarrantyForm((prev) => ({ ...prev, purchaseDate }))}
+        placeholder={toIsoOrEmpty(new Date())}
+        autoCapitalize="none"
+      />
+      <Text style={styles.label}>Coverage Ends On</Text>
+      <TextInput
+        style={styles.input}
+        value={warrantyForm.coverageEndsOn}
+        onChangeText={(coverageEndsOn) => setWarrantyForm((prev) => ({ ...prev, coverageEndsOn }))}
+        placeholder={toIsoOrEmpty(new Date().setFullYear(new Date().getFullYear() + 1))}
+        autoCapitalize="none"
+      />
+      <Text style={styles.label}>Coverage Notes (optional)</Text>
+      <TextInput
+        style={[styles.input, styles.multiline]}
+        multiline
+        value={warrantyForm.coverageNotes}
+        onChangeText={(coverageNotes) => setWarrantyForm((prev) => ({ ...prev, coverageNotes }))}
+        placeholder="Add claim instructions or serial numbers"
+      />
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <Text style={styles.title}>What would you like to add?</Text>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Text style={styles.title}>Add a benefit</Text>
         <Text style={styles.subtitle}>
-          Real capture flows will live here. Use the buttons to simulate new entries.
+          Snap or pick a photo to auto-fill fields, then review before saving.
         </Text>
-        <Pressable
-          style={[styles.button, styles.primary]}
-          onPress={() => {
-            void handleAddCoupon();
-          }}
-        >
-          <Text style={styles.buttonText}>Add sample coupon</Text>
+
+        <View style={styles.modeToggle}>
+          {(['coupon', 'warranty'] as BenefitType[]).map((type) => (
+            <Pressable
+              key={type}
+              onPress={() => {
+                setMode(type);
+              }}
+              style={[styles.modeButton, mode === type && styles.modeButtonActive]}
+            >
+              <Text style={[styles.modeButtonText, mode === type && styles.modeButtonTextActive]}>
+                {type === 'coupon' ? 'Coupon' : 'Warranty'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Pressable style={styles.scanButton} onPress={() => void handleAnalyzeImage()}>
+          {analyzing ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.scanText}>Scan from photo</Text>
+          )}
         </Pressable>
+
+        {analysis?.warnings?.length ? (
+          <View style={styles.warningBox}>
+            <Text style={styles.warningTitle}>We couldn’t capture everything:</Text>
+            {analysis.warnings.map((warning) => (
+              <Text key={warning} style={styles.warningText}>
+                • {warning}
+              </Text>
+            ))}
+          </View>
+        ) : null}
+
+        {mode === 'coupon' ? renderCouponFields() : renderWarrantyFields()}
+
         <Pressable
-          style={[styles.button, styles.secondary]}
-          onPress={() => {
-            void handleAddWarranty();
-          }}
+          style={[styles.saveButton, submitting && styles.saveButtonDisabled]}
+          onPress={() => void handleSave()}
+          disabled={submitting}
         >
-          <Text style={styles.buttonText}>Add sample warranty</Text>
+          {submitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.saveText}>Save to wallet</Text>
+          )}
         </Pressable>
-      </View>
+
+        <View style={styles.previewBox}>
+          <Text style={styles.previewTitle}>Current values</Text>
+          {mode === 'coupon' ? (
+            <>
+              <Text style={styles.previewLine}>Merchant: {couponForm.merchant || '—'}</Text>
+              <Text style={styles.previewLine}>Description: {couponForm.description || '—'}</Text>
+              <Text style={styles.previewLine}>Expires: {couponForm.expiresOn || '—'}</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.previewLine}>Product: {warrantyForm.productName || '—'}</Text>
+              <Text style={styles.previewLine}>Merchant: {warrantyForm.merchant || '—'}</Text>
+              <Text style={styles.previewLine}>Purchased: {warrantyForm.purchaseDate || '—'}</Text>
+              <Text style={styles.previewLine}>
+                Coverage Ends: {warrantyForm.coverageEndsOn || '—'}
+              </Text>
+            </>
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -71,14 +325,11 @@ const AddBenefitScreen = (): React.ReactElement => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f9fafb',
   },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  content: {
     padding: 24,
-    gap: 16,
+    gap: 20,
   },
   title: {
     fontSize: 24,
@@ -88,26 +339,119 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     color: '#4b5563',
-    textAlign: 'center',
     lineHeight: 22,
   },
-  button: {
-    width: '100%',
+  modeToggle: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  modeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  modeButtonActive: {
+    borderColor: '#2563eb',
+    backgroundColor: '#dbeafe',
+  },
+  modeButtonText: {
+    fontSize: 15,
+    color: '#1f2937',
+    fontWeight: '600',
+  },
+  modeButtonTextActive: {
+    color: '#1d4ed8',
+  },
+  scanButton: {
+    backgroundColor: '#2563eb',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  scanText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  section: {
+    gap: 12,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    backgroundColor: '#fff',
+    color: '#111827',
+  },
+  multiline: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  saveButton: {
+    backgroundColor: '#047857',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
   },
-  primary: {
-    backgroundColor: '#2563eb',
+  saveButtonDisabled: {
+    opacity: 0.7,
   },
-  secondary: {
-    backgroundColor: '#047857',
-  },
-  buttonText: {
+  saveText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '700',
+  },
+  previewBox: {
+    backgroundColor: '#f4f4f5',
+    borderRadius: 12,
+    padding: 16,
+    gap: 6,
+  },
+  previewTitle: {
+    fontSize: 14,
     fontWeight: '600',
-    letterSpacing: 0.3,
+    color: '#1f2937',
+  },
+  previewLine: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  warningBox: {
+    backgroundColor: '#fff7ed',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    gap: 4,
+  },
+  warningTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#9a3412',
+  },
+  warningText: {
+    fontSize: 13,
+    color: '#9a3412',
   },
 });
 
