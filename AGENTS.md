@@ -4,7 +4,7 @@
 - `apps/mobile/` – Expo client (screens in `src/screens/`, shared UI in `src/components/`, services under `src/services/`). `metro.config.js` keeps Metro aware of the monorepo.
 - `convex/` – Convex schema (`schema.ts/js`), queries (`queries/`), mutations (`mutations/`), cron jobs, and generated bindings (`_generated/`). Always run `npx convex codegen` after you touch this tree.
 - `packages/shared/` – cross-cutting TypeScript utilities and types consumed by both client and backend via barrel exports.
-- Documentation lives in `docs/`; keep product notes (`receipts_warranties_poc.md`) and any runbooks here.
+- Documentation lives in `docs/`; keep product notes (`receipts_warranties_poc.md`), OCR setup (`google-vision-integration.md`), and any runbooks here.
 - Environment samples belong in the repo root (`.env.example`). The app resolves `.env` then `.env.local` before anything else.
 
 ## Build, Test, and Development Commands
@@ -29,3 +29,4 @@ Use Conventional Commits (`feat:`, `fix:`, `chore:`) referencing issue IDs when 
 
 ## Security & Configuration Tips
 Never commit secrets. `EXPO_PUBLIC_CONVEX_URL`, `CONVEX_DEPLOYMENT`, and `CONVEX_AUTH_TOKEN` belong in `.env.local`. Rotate tokens immediately if they leak and document the rotation in your PR. Lock mobile builds to minimum OS versions and use Expo’s EAS secrets management before generating release builds.
+- Google Vision credentials live in Convex environment variables (`GOOGLE_VISION_PROJECT_ID`, `GOOGLE_VISION_CLIENT_EMAIL`, `GOOGLE_VISION_PRIVATE_KEY`). Set them with `npx convex env set` and mirror public flags in `.env.local` only when necessary.

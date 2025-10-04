@@ -9,7 +9,12 @@ import React, {
 } from 'react';
 import { useConvex, useMutation } from 'convex/react';
 import { v4 as uuid } from 'uuid';
-import type { Coupon, Warranty } from '@receipt-warranty/shared';
+import type {
+  AnalyzeBenefitImageParams,
+  Coupon,
+  VisionAnalysisResult,
+  Warranty,
+} from '@receipt-warranty/shared';
 
 import { api } from '../../../../convex/_generated/api';
 import {
@@ -33,6 +38,7 @@ interface BenefitsContextValue {
   getWarrantyById: (id: string) => Warranty | undefined;
   refreshBenefits: () => Promise<void>;
   resetToSampleData: () => Promise<void>;
+  analyzeBenefitImage: (params: AnalyzeBenefitImageParams) => Promise<VisionAnalysisResult>;
 }
 
 const BenefitsContext = createContext<BenefitsContextValue | undefined>(undefined);
@@ -85,6 +91,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
   const addWarrantyMutation = useMutation(api.mutations.benefits.addWarranty);
   const deleteCouponMutation = useMutation(api.mutations.benefits.deleteCoupon);
   const deleteWarrantyMutation = useMutation(api.mutations.benefits.deleteWarranty);
+  const generateUploadUrl = useMutation(api.mutations.uploads.generateUploadUrl);
 
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [warranties, setWarranties] = useState<Warranty[]>([]);
@@ -295,6 +302,46 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
     await saveBenefits(sample);
   }, []);
 
+  const analyzeBenefitImage = useCallback<BenefitsContextValue['analyzeBenefitImage']>(
+    async ({ uri, mimeType, benefitType, originalFileName }) => {
+      const uploadUrl = await generateUploadUrl({});
+      const extension = mimeType.split('/')[1] ?? 'jpg';
+      const filename = originalFileName ?? `benefit-${Date.now()}.${extension}`;
+      const formData = new FormData();
+      formData.append('file', {
+        uri,
+        name: filename,
+        type: mimeType,
+      } as unknown as Blob);
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed with status ${uploadResponse.status}`);
+      }
+
+      const payload = (await uploadResponse.json()) as { storageId?: string };
+      if (!payload.storageId) {
+        throw new Error('Convex upload response missing storageId');
+      }
+
+      const analysis = (await convex.action(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+        api['actions/vision'].analyzeBenefitImage,
+        {
+          storageId: payload.storageId,
+          analyzeAs: benefitType,
+        },
+      )) as VisionAnalysisResult;
+
+      return analysis;
+    },
+    [convex, generateUploadUrl],
+  );
+
   const value = useMemo(
     () => ({
       coupons,
@@ -308,6 +355,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
       getWarrantyById,
       refreshBenefits,
       resetToSampleData,
+      analyzeBenefitImage,
     }),
     [
       coupons,
@@ -322,6 +370,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
       getWarrantyById,
       refreshBenefits,
       resetToSampleData,
+      analyzeBenefitImage,
     ],
   );
 

@@ -60,8 +60,8 @@ The PoC must validate:
 - File storage: store images, return signed URLs.  
 
 ### OCR
-- Google Vision API (cheap tier).  
-- Parse: vendor (string), date (ISO), total (number).  
+- Google Vision API (cheap tier) via Convex action `actions/vision.analyzeBenefitImage`.  
+- Parse: vendor (string), date (ISO), total (number); annotate coverage/expiry for warranties.  
 - Fallback: if parsing fails, still store photo (manual input later).
 
 ---
