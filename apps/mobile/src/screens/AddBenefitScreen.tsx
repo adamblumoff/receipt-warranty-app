@@ -17,6 +17,8 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system/legacy';
 import { v4 as uuid } from 'uuid';
 
+import { analyzeImageLocally } from '../services/localOcr';
+
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useBenefits } from '../providers/BenefitsProvider';
 import type { BenefitType, VisionAnalysisResult } from '@receipt-warranty/shared';
@@ -142,6 +144,34 @@ const AddBenefitScreen = (): React.ReactElement => {
       console.warn('Image manipulation skipped', manipulationError);
     }
 
+    const applyAnalysis = (result: VisionAnalysisResult, source: 'local' | 'remote') => {
+      setAnalysis(result);
+      if (mode === 'coupon') {
+        setCouponForm((prev) => ({
+          merchant: result.fields.merchant?.value ?? prev.merchant,
+          description: result.fields.description?.value ?? prev.description,
+          expiresOn: result.fields.expiresOn?.value ?? prev.expiresOn,
+          terms: prev.terms,
+        }));
+      } else {
+        setWarrantyForm((prev) => ({
+          productName: result.fields.productName?.value ?? prev.productName,
+          merchant: result.fields.merchant?.value ?? prev.merchant,
+          purchaseDate: result.fields.purchaseDate?.value ?? prev.purchaseDate,
+          coverageEndsOn: result.fields.coverageEndsOn?.value ?? prev.coverageEndsOn,
+          coverageNotes: prev.coverageNotes,
+        }));
+      }
+      logEvent(`vision:applied_${source}`);
+    };
+
+    const localStart = Date.now();
+    const localResult = await analyzeImageLocally(workingUri, mode);
+    if (localResult) {
+      logTiming('local_ocr', localStart);
+      applyAnalysis(localResult, 'local');
+    }
+
     setAnalyzing(true);
     try {
       const visionStart = Date.now();
@@ -149,30 +179,14 @@ const AddBenefitScreen = (): React.ReactElement => {
         uri: workingUri,
         mimeType,
         benefitType: mode,
-        originalFileName: asset.fileName,
       });
       logTiming('vision', visionStart);
-      setAnalysis(visionResult);
-
-      if (mode === 'coupon') {
-        setCouponForm((prev) => ({
-          merchant: visionResult.fields.merchant?.value ?? prev.merchant,
-          description: visionResult.fields.description?.value ?? prev.description,
-          expiresOn: visionResult.fields.expiresOn?.value ?? prev.expiresOn,
-          terms: prev.terms,
-        }));
-      } else {
-        setWarrantyForm((prev) => ({
-          productName: visionResult.fields.productName?.value ?? prev.productName,
-          merchant: visionResult.fields.merchant?.value ?? prev.merchant,
-          purchaseDate: visionResult.fields.purchaseDate?.value ?? prev.purchaseDate,
-          coverageEndsOn: visionResult.fields.coverageEndsOn?.value ?? prev.coverageEndsOn,
-          coverageNotes: prev.coverageNotes,
-        }));
-      }
+      applyAnalysis(visionResult, 'remote');
     } catch (error) {
       console.warn('Vision analysis failed', error);
-      Alert.alert('Unable to analyze image', 'Please try again with a clearer photo.');
+      if (!localResult) {
+        Alert.alert('Unable to analyze image', 'Please try again with a clearer photo.');
+      }
     } finally {
       logTiming('overall', overallStart);
       setAnalyzing(false);

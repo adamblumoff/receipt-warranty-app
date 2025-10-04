@@ -34,6 +34,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         backgroundColor: '#ffffff',
       },
     },
+    plugins: ['@react-native-ml-kit/text-recognition'],
     web: {
       bundler: 'metro',
       output: 'single',

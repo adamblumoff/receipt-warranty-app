@@ -22,11 +22,8 @@ type PreprocessedImage = {
   quality: (value: number) => PreprocessedImage;
   getBufferAsync: (mime: string) => Promise<Buffer>;
 };
-import type {
-  BenefitType,
-  VisionAnalysisResult,
-  VisionFieldSuggestion,
-} from '@receipt-warranty/shared';
+import type { BenefitType, VisionAnalysisResult } from '@receipt-warranty/shared';
+import { deriveFieldsFromLines, buildWarnings } from '@receipt-warranty/shared';
 
 const REQUIRED_ENV_VARS = [
   'GOOGLE_VISION_CLIENT_EMAIL',
