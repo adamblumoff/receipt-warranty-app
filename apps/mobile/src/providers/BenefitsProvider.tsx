@@ -8,6 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { useConvex, useMutation } from 'convex/react';
+import { uploadAsync, FileSystemUploadType } from 'expo-file-system';
 import { v4 as uuid } from 'uuid';
 import type {
   AnalyzeBenefitImageParams,
@@ -305,22 +306,21 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
   const analyzeBenefitImage = useCallback<BenefitsContextValue['analyzeBenefitImage']>(
     async ({ uri, mimeType, benefitType }) => {
       const uploadUrl = await generateUploadUrl({});
-      const fileResponse = await fetch(uri);
-      const fileBlob = await fileResponse.blob();
-
-      const uploadResponse = await fetch(uploadUrl, {
-        method: 'POST',
+      /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
+      const uploadResponse = await uploadAsync(uploadUrl, uri, {
+        httpMethod: 'POST',
         headers: {
           'Content-Type': mimeType,
         },
-        body: fileBlob,
+        uploadType: FileSystemUploadType.BINARY_CONTENT,
       });
+      /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
 
-      if (!uploadResponse.ok) {
+      if (uploadResponse.status !== 200 || !uploadResponse.body) {
         throw new Error(`Upload failed with status ${uploadResponse.status}`);
       }
 
-      const payload = (await uploadResponse.json()) as { storageId?: string };
+      const payload = JSON.parse(uploadResponse.body) as { storageId?: string };
       if (!payload.storageId) {
         throw new Error('Convex upload response missing storageId');
       }
