@@ -220,27 +220,27 @@ const runDetection = async (
   textAnnotations: number;
   pages: number;
 }> => {
-  const documentStart = Date.now();
-  const [documentDetection] = await client.annotateImage({
+  const textStart = Date.now();
+  const [textDetection] = await client.annotateImage({
     image: { content },
-    features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
+    features: [{ type: 'TEXT_DETECTION' }],
     imageContext: { languageHints: ['en'] },
   });
-  console.log('vision:document_ms', { label, duration: Date.now() - documentStart });
+  console.log('vision:text_ms', { label, duration: Date.now() - textStart });
 
-  let annotation = documentDetection.fullTextAnnotation;
-  let textAnnotations = documentDetection.textAnnotations ?? [];
+  let annotation = textDetection.fullTextAnnotation;
+  let textAnnotations = textDetection.textAnnotations ?? [];
 
   if ((!annotation || !annotation.text?.trim()) && textAnnotations.length === 0) {
-    const textStart = Date.now();
-    const [textDetection] = await client.annotateImage({
+    const documentStart = Date.now();
+    const [documentDetection] = await client.annotateImage({
       image: { content },
-      features: [{ type: 'TEXT_DETECTION' }],
+      features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
       imageContext: { languageHints: ['en'] },
     });
-    console.log('vision:text_ms', { label, duration: Date.now() - textStart });
-    annotation = textDetection.fullTextAnnotation ?? annotation;
-    textAnnotations = textDetection.textAnnotations ?? textAnnotations;
+    console.log('vision:document_ms', { label, duration: Date.now() - documentStart });
+    annotation = documentDetection.fullTextAnnotation ?? annotation;
+    textAnnotations = documentDetection.textAnnotations ?? textAnnotations;
   }
 
   const rawText = annotation?.text ?? textAnnotations?.[0]?.description ?? '';

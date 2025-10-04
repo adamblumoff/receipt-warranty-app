@@ -110,7 +110,7 @@ const AddBenefitScreen = (): React.ReactElement => {
 
     try {
       const transcodeStart = Date.now();
-      const maxDimension = 1280;
+      const maxDimension = 900;
       const actions: ImageManipulator.Action[] = [];
       if (asset.width && asset.height) {
         const longestEdge = Math.max(asset.width, asset.height);
@@ -125,7 +125,7 @@ const AddBenefitScreen = (): React.ReactElement => {
         }
       }
       const manipulated = await ImageManipulator.manipulateAsync(asset.uri, actions, {
-        compress: 0.6,
+        compress: 0.4,
         format: ImageManipulator.SaveFormat.JPEG,
       });
       workingUri = manipulated.uri;
