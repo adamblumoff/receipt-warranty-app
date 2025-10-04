@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  Platform,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +18,10 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system/legacy';
 import { v4 as uuid } from 'uuid';
+import DateTimePicker, {
+  DateTimePickerAndroid,
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useBenefits } from '../providers/BenefitsProvider';
 import type { BenefitType, VisionAnalysisResult } from '@receipt-warranty/shared';
@@ -68,6 +74,99 @@ const AddBenefitScreen = (): React.ReactElement => {
   const [analysis, setAnalysis] = useState<VisionAnalysisResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [couponDatePickerVisible, setCouponDatePickerVisible] = useState(false);
+  const [couponDateDraft, setCouponDateDraft] = useState<Date>(new Date());
+
+  useEffect(() => {
+    if (couponForm.expiresOn) {
+      const parsed = new Date(couponForm.expiresOn);
+      if (!Number.isNaN(parsed.getTime())) {
+        setCouponDateDraft(parsed);
+      }
+    }
+  }, [couponForm.expiresOn]);
+
+  const getCouponExpiryDisplay = (): string => {
+    if (!couponForm.expiresOn) {
+      return 'Select date';
+    }
+    const date = new Date(couponForm.expiresOn);
+    if (Number.isNaN(date.getTime())) {
+      return 'Select date';
+    }
+    return new Intl.DateTimeFormat(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }).format(date);
+  };
+
+  const openCouponDatePicker = () => {
+    const initial = couponForm.expiresOn ? new Date(couponForm.expiresOn) : new Date();
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: initial,
+        mode: 'date',
+        onChange: (_event: DateTimePickerEvent, selectedDate?: Date) => {
+          if (selectedDate) {
+            setCouponForm((prev) => ({
+              ...prev,
+              expiresOn: selectedDate.toISOString(),
+            }));
+          }
+        },
+      });
+    } else {
+      setCouponDateDraft(initial);
+      setCouponDatePickerVisible(true);
+    }
+  };
+
+  const handleIosCouponDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (selectedDate) {
+      setCouponDateDraft(selectedDate);
+    }
+  };
+
+  const confirmCouponDate = () => {
+    setCouponForm((prev) => ({
+      ...prev,
+      expiresOn: couponDateDraft.toISOString(),
+    }));
+    setCouponDatePickerVisible(false);
+  };
+
+  const cancelCouponDate = () => {
+    setCouponDatePickerVisible(false);
+  };
+
+  const iosCouponDatePicker =
+    couponDatePickerVisible && Platform.OS === 'ios' ? (
+      <Modal transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <DateTimePicker
+              value={couponDateDraft}
+              mode="date"
+              display="spinner"
+              onChange={handleIosCouponDateChange}
+              style={styles.iosPicker}
+            />
+            <View style={styles.modalActions}>
+              <Pressable style={styles.modalButton} onPress={cancelCouponDate}>
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalButton, styles.modalPrimaryButton]}
+                onPress={confirmCouponDate}
+              >
+                <Text style={[styles.modalButtonText, styles.modalPrimaryButtonText]}>Done</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    ) : null;
 
   const handleAnalyzeImage = async (source: 'library' | 'camera') => {
     if (source === 'library') {
@@ -141,7 +240,7 @@ const AddBenefitScreen = (): React.ReactElement => {
       console.warn('Image manipulation skipped', manipulationError);
     }
 
-    const applyAnalysis = (result: VisionAnalysisResult, source: 'remote') => {
+    const applyAnalysis = (result: VisionAnalysisResult) => {
       setAnalysis(result);
       if (mode === 'coupon') {
         setCouponForm((prev) => ({
@@ -159,7 +258,7 @@ const AddBenefitScreen = (): React.ReactElement => {
           coverageNotes: prev.coverageNotes,
         }));
       }
-      logEvent(`vision:applied_${source}`);
+      logEvent('vision:applied_remote');
     };
 
     setAnalyzing(true);
@@ -171,7 +270,7 @@ const AddBenefitScreen = (): React.ReactElement => {
         benefitType: mode,
       });
       logTiming('vision', visionStart);
-      applyAnalysis(visionResult, 'remote');
+      applyAnalysis(visionResult);
     } catch (error) {
       console.warn('Vision analysis failed', error);
       Alert.alert('Unable to analyze image', 'Please try again with a clearer photo.');
@@ -252,13 +351,11 @@ const AddBenefitScreen = (): React.ReactElement => {
         placeholder="Buy one get one free latte"
       />
       <Text style={styles.label}>Expires On</Text>
-      <TextInput
-        style={styles.input}
-        value={couponForm.expiresOn}
-        onChangeText={(expiresOn) => setCouponForm((prev) => ({ ...prev, expiresOn }))}
-        placeholder="2025-12-31T00:00:00.000Z"
-        autoCapitalize="none"
-      />
+      <Pressable style={[styles.input, styles.dateInput]} onPress={openCouponDatePicker}>
+        <Text style={couponForm.expiresOn ? styles.dateInputText : styles.dateInputPlaceholder}>
+          {getCouponExpiryDisplay()}
+        </Text>
+      </Pressable>
       <Text style={styles.label}>Terms (optional)</Text>
       <TextInput
         style={[styles.input, styles.multiline]}
@@ -315,6 +412,7 @@ const AddBenefitScreen = (): React.ReactElement => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {iosCouponDatePicker}
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Add a benefit</Text>
         <Text style={styles.subtitle}>
@@ -397,7 +495,9 @@ const AddBenefitScreen = (): React.ReactElement => {
             <>
               <Text style={styles.previewLine}>Merchant: {couponForm.merchant || '—'}</Text>
               <Text style={styles.previewLine}>Description: {couponForm.description || '—'}</Text>
-              <Text style={styles.previewLine}>Expires: {couponForm.expiresOn || '—'}</Text>
+              <Text style={styles.previewLine}>
+                Expires: {couponForm.expiresOn ? getCouponExpiryDisplay() : '—'}
+              </Text>
             </>
           ) : (
             <>
@@ -512,6 +612,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     color: '#111827',
   },
+  dateInput: {
+    justifyContent: 'center',
+  },
+  dateInputText: {
+    fontSize: 15,
+    color: '#111827',
+  },
+  dateInputPlaceholder: {
+    fontSize: 15,
+    color: '#9ca3af',
+  },
   multiline: {
     minHeight: 80,
     textAlignVertical: 'top',
@@ -561,6 +672,46 @@ const styles = StyleSheet.create({
   warningText: {
     fontSize: 13,
     color: '#9a3412',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(17, 24, 39, 0.45)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    gap: 12,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    paddingVertical: 8,
+  },
+  modalButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#e5e7eb',
+  },
+  modalPrimaryButton: {
+    backgroundColor: '#2563eb',
+  },
+  modalButtonText: {
+    color: '#1f2937',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  modalPrimaryButtonText: {
+    color: '#fff',
+  },
+  iosPicker: {
+    alignSelf: 'stretch',
   },
 });
 
