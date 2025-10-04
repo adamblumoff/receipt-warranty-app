@@ -252,11 +252,43 @@ const parseIsoDate = (candidate: string | undefined): string | undefined => {
     return undefined;
   }
   const sanitized = candidate.replace(/[,]/g, '').replace(/\s+/g, ' ').trim();
+
+  const numericMatch = sanitized.match(/^(\d{1,4})[/-](\d{1,2})[/-](\d{1,4})$/);
+  if (numericMatch) {
+    const [first, second, third] = numericMatch.slice(1).map((value) => Number.parseInt(value, 10));
+    let year: number;
+    let month: number;
+    let day: number;
+    if (first > 1900) {
+      year = first;
+      month = second;
+      day = third;
+    } else if (third > 1900) {
+      year = third;
+      month = first;
+      day = second;
+    } else {
+      year = third >= 100 ? third : 2000 + third;
+      month = first;
+      day = second;
+    }
+    if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+      return undefined;
+    }
+    const normalized = new Date(Date.UTC(year, month - 1, day));
+    if (Number.isNaN(normalized.getTime())) {
+      return undefined;
+    }
+    return normalized.toISOString();
+  }
+
   const parsed = new Date(sanitized);
   if (Number.isNaN(parsed.getTime())) {
     return undefined;
   }
-  return parsed.toISOString();
+  return new Date(
+    Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate()),
+  ).toISOString();
 };
 
 const scoreForContext = (line: string, keywords: string[]): number => {
