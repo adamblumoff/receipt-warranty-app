@@ -112,29 +112,70 @@ const extractMultipartFile = (
   buffer: Buffer,
   contentType?: string,
 ): { file: Buffer; inferredType?: string } | null => {
-  if (!contentType || !contentType.includes('multipart/form-data')) {
+  const detectBoundary = (): string | null => {
+    if (contentType && contentType.includes('multipart/form-data')) {
+      const match = /boundary="?([^\s;"]+)"?/i.exec(contentType);
+      if (match) {
+        return match[1];
+      }
+    }
+    if (buffer.subarray(0, 2).toString('ascii') === '--') {
+      const lineEnd = buffer.indexOf(Buffer.from('\r\n'));
+      if (lineEnd !== -1) {
+        return buffer.subarray(2, lineEnd).toString('ascii').trim();
+      }
+    }
+    return null;
+  };
+
+  const boundary = detectBoundary();
+  if (!boundary) {
     return null;
   }
-  const boundaryMatch = /boundary=([^;]+)/i.exec(contentType);
-  if (!boundaryMatch) {
-    return null;
-  }
-  const boundary = boundaryMatch[1];
-  const sections = buffer.toString('latin1').split(`--${boundary}`);
-  for (const section of sections) {
-    if (!section.includes('Content-Disposition')) {
+
+  const boundaryBuf = Buffer.from(`--${boundary}`);
+  const headerSeparator = Buffer.from('\r\n\r\n');
+  let cursor = 0;
+
+  while (cursor < buffer.length) {
+    const boundaryIndex = buffer.indexOf(boundaryBuf, cursor);
+    if (boundaryIndex === -1) {
+      break;
+    }
+    let sectionStart = boundaryIndex + boundaryBuf.length;
+    if (buffer[sectionStart] === 0x2d && buffer[sectionStart + 1] === 0x2d) {
+      break;
+    }
+    if (buffer[sectionStart] === 0x0d && buffer[sectionStart + 1] === 0x0a) {
+      sectionStart += 2;
+    }
+
+    const headerEnd = buffer.indexOf(headerSeparator, sectionStart);
+    if (headerEnd === -1) {
+      break;
+    }
+
+    const headers = buffer.subarray(sectionStart, headerEnd).toString('utf8');
+    if (!/name="file"/i.test(headers)) {
+      cursor = headerEnd + headerSeparator.length;
       continue;
     }
-    const [rawHeaders, rawBody] = section.split('\r\n\r\n');
-    if (!rawBody) {
-      continue;
+
+    const dataStart = headerEnd + headerSeparator.length;
+    let nextBoundary = buffer.indexOf(boundaryBuf, dataStart);
+    if (nextBoundary === -1) {
+      nextBoundary = buffer.length;
     }
-    const headerText = rawHeaders.trim();
-    const detectedTypeMatch = /Content-Type:\s*([^\r\n]+)/i.exec(headerText);
-    const bodyWithoutClosing = rawBody.replace(/\r\n--$/m, '').replace(/\r\n$/m, '');
-    const file = Buffer.from(bodyWithoutClosing, 'latin1');
+    let dataEnd = nextBoundary;
+    if (buffer[dataEnd - 2] === 0x0d && buffer[dataEnd - 1] === 0x0a) {
+      dataEnd -= 2;
+    }
+
+    const file = buffer.subarray(dataStart, dataEnd);
+    const detectedTypeMatch = /Content-Type:\s*([^\r\n]+)/i.exec(headers);
     return { file, inferredType: detectedTypeMatch?.[1]?.trim() };
   }
+
   return null;
 };
 

@@ -3,13 +3,13 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
@@ -71,16 +71,15 @@ const AddBenefitScreen = (): React.ReactElement => {
       }
     }
 
+    const pickerOptions: ImagePicker.ImagePickerOptions = {
+      mediaTypes: 'images',
+      quality: 0.8,
+    };
+
     const pickerResult =
       source === 'library'
-        ? await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            quality: 0.8,
-          })
-        : await ImagePicker.launchCameraAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            quality: 0.8,
-          });
+        ? await ImagePicker.launchImageLibraryAsync(pickerOptions)
+        : await ImagePicker.launchCameraAsync(pickerOptions);
 
     if (pickerResult.canceled || !pickerResult.assets?.length) {
       return;
