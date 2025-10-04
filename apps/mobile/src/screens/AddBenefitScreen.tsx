@@ -16,9 +16,6 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system/legacy';
 import { v4 as uuid } from 'uuid';
-
-import { analyzeImageLocally } from '../services/localOcr';
-
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useBenefits } from '../providers/BenefitsProvider';
 import type { BenefitType, VisionAnalysisResult } from '@receipt-warranty/shared';
@@ -144,7 +141,7 @@ const AddBenefitScreen = (): React.ReactElement => {
       console.warn('Image manipulation skipped', manipulationError);
     }
 
-    const applyAnalysis = (result: VisionAnalysisResult, source: 'local' | 'remote') => {
+    const applyAnalysis = (result: VisionAnalysisResult, source: 'remote') => {
       setAnalysis(result);
       if (mode === 'coupon') {
         setCouponForm((prev) => ({
@@ -165,13 +162,6 @@ const AddBenefitScreen = (): React.ReactElement => {
       logEvent(`vision:applied_${source}`);
     };
 
-    const localStart = Date.now();
-    const localResult = await analyzeImageLocally(workingUri, mode);
-    if (localResult) {
-      logTiming('local_ocr', localStart);
-      applyAnalysis(localResult, 'local');
-    }
-
     setAnalyzing(true);
     try {
       const visionStart = Date.now();
@@ -184,9 +174,7 @@ const AddBenefitScreen = (): React.ReactElement => {
       applyAnalysis(visionResult, 'remote');
     } catch (error) {
       console.warn('Vision analysis failed', error);
-      if (!localResult) {
-        Alert.alert('Unable to analyze image', 'Please try again with a clearer photo.');
-      }
+      Alert.alert('Unable to analyze image', 'Please try again with a clearer photo.');
     } finally {
       logTiming('overall', overallStart);
       setAnalyzing(false);

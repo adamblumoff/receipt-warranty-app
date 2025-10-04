@@ -31,7 +31,7 @@ EAS_NO_VCS=1 eas build --profile development --platform ios
 1. Trigger the development build (see command above).
 2. Once finished, download/install the build on the device (Expo provides an install link/QR).
 3. Start the JS bundle with `npm run dev:mobile -- --dev-client` (or `npx expo start --dev-client`).
-4. The native module `expo-text-recognition` will now work on-device.
+4. Install the Expo dev client build to unlock native modules as needed.
 
 ## 4. Handling Secrets
 - EAS prompts for Apple credentials. Store them in `eas secret` or Expo dashboard.
