@@ -303,20 +303,17 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
   }, []);
 
   const analyzeBenefitImage = useCallback<BenefitsContextValue['analyzeBenefitImage']>(
-    async ({ uri, mimeType, benefitType, originalFileName }) => {
+    async ({ uri, mimeType, benefitType }) => {
       const uploadUrl = await generateUploadUrl({});
-      const extension = mimeType.split('/')[1] ?? 'jpg';
-      const filename = originalFileName ?? `benefit-${Date.now()}.${extension}`;
-      const formData = new FormData();
-      formData.append('file', {
-        uri,
-        name: filename,
-        type: mimeType,
-      } as unknown as Blob);
+      const fileResponse = await fetch(uri);
+      const fileBlob = await fileResponse.blob();
 
       const uploadResponse = await fetch(uploadUrl, {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': mimeType,
+        },
+        body: fileBlob,
       });
 
       if (!uploadResponse.ok) {
