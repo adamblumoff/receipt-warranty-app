@@ -56,23 +56,37 @@ const AddBenefitScreen = (): React.ReactElement => {
   const [analyzing, setAnalyzing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const handleAnalyzeImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission required', 'Media library access is needed to scan an image.');
+  const handleAnalyzeImage = async (source: 'library' | 'camera') => {
+    if (source === 'library') {
+      const mediaPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!mediaPermission.granted) {
+        Alert.alert('Permission required', 'Media library access is needed to scan an image.');
+        return;
+      }
+    } else {
+      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!cameraPermission.granted) {
+        Alert.alert('Permission required', 'Camera access is needed to capture an image.');
+        return;
+      }
+    }
+
+    const pickerResult =
+      source === 'library'
+        ? await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.8,
+          })
+        : await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.8,
+          });
+
+    if (pickerResult.canceled || !pickerResult.assets?.length) {
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-    });
-
-    if (result.canceled || !result.assets?.length) {
-      return;
-    }
-
-    const asset = result.assets[0];
+    const asset = pickerResult.assets[0];
     const mimeType = asset.mimeType ?? 'image/jpeg';
 
     setAnalyzing(true);
@@ -265,13 +279,34 @@ const AddBenefitScreen = (): React.ReactElement => {
           ))}
         </View>
 
-        <Pressable style={styles.scanButton} onPress={() => void handleAnalyzeImage()}>
-          {analyzing ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.scanText}>Scan from photo</Text>
-          )}
-        </Pressable>
+        <View style={styles.scanRow}>
+          <Pressable
+            style={[styles.scanButton, analyzing && styles.scanButtonDisabled]}
+            onPress={() => void handleAnalyzeImage('library')}
+            disabled={analyzing}
+          >
+            {analyzing ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.scanText}>Scan from gallery</Text>
+            )}
+          </Pressable>
+          <Pressable
+            style={[
+              styles.scanButton,
+              styles.scanButtonSecondary,
+              analyzing && styles.scanButtonDisabled,
+            ]}
+            onPress={() => void handleAnalyzeImage('camera')}
+            disabled={analyzing}
+          >
+            {analyzing ? (
+              <ActivityIndicator color="#111827" />
+            ) : (
+              <Text style={styles.scanTextSecondary}>Capture photo</Text>
+            )}
+          </Pressable>
+        </View>
 
         {analysis?.warnings?.length ? (
           <View style={styles.warningBox}>
@@ -366,14 +401,30 @@ const styles = StyleSheet.create({
   modeButtonTextActive: {
     color: '#1d4ed8',
   },
+  scanRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
   scanButton: {
     backgroundColor: '#2563eb',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
+    flex: 1,
+  },
+  scanButtonSecondary: {
+    backgroundColor: '#e2e8f0',
+  },
+  scanButtonDisabled: {
+    opacity: 0.75,
   },
   scanText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  scanTextSecondary: {
+    color: '#1f2937',
     fontSize: 16,
     fontWeight: '600',
   },

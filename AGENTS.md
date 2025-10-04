@@ -20,7 +20,7 @@ Use strict TypeScript throughout. Prettier formatting: 2-space indent, single qu
 ## Data Sync & Features
 - The `BenefitsProvider` hydrates from AsyncStorage, syncs with Convex, and exposes `add*`/`remove*` helpers. Deletions immediately update local state and fire Convex mutations in the background.
 - Coupons and warranties live in Convex tables with `createdAt` timestamps; reminder logic will eventually run via `checkExpiringBenefits` cron.
-- `AddBenefitScreen` lets contributors capture a benefit photo, runs Google Vision OCR via `analyzeBenefitImage`, and pre-fills coupon/warranty fields before saving.
+- `AddBenefitScreen` lets contributors capture a benefit photo (camera or gallery), runs Google Vision OCR via `analyzeBenefitImage`, and pre-fills coupon/warranty fields before saving.
 
 ## Testing Guidelines
 Target Jest + React Native Testing Library for the Expo app and Convex’s testing harness for backend logic. Place mobile tests in `apps/mobile/__tests__/` mirroring screen/component names (`BenefitOverviewScreen.test.tsx`) and backend tests in `convex/__tests__/`. Aim for ≥80 % coverage on capture/import flows, sync logic, and reminder scheduling.

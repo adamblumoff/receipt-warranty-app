@@ -12,6 +12,8 @@ type PreprocessedImage = {
     width: number;
     height: number;
   };
+  clone: () => PreprocessedImage;
+  rotate: (degrees: number) => PreprocessedImage;
   scale: (factor: number) => PreprocessedImage;
   scaleToFit: (w: number, h: number, mode?: unknown) => PreprocessedImage;
   normalize: () => PreprocessedImage;
@@ -134,6 +136,28 @@ const extractMultipartFile = (
     return { file, inferredType: detectedTypeMatch?.[1]?.trim() };
   }
   return null;
+};
+
+const rotateBuffers = async (buffer: Buffer): Promise<Buffer[]> => {
+  const buffers: Buffer[] = [];
+  try {
+    const baseImage = (await Jimp.read(buffer)) as unknown as PreprocessedImage;
+    const mime = (Jimp as unknown as { MIME_JPEG?: string }).MIME_JPEG ?? 'image/jpeg';
+    for (const degrees of [90, 180, 270]) {
+      try {
+        const rotated = baseImage.clone().rotate(degrees);
+        if (typeof rotated.getBufferAsync === 'function') {
+          const candidate = await rotated.getBufferAsync(mime);
+          buffers.push(candidate);
+        }
+      } catch (rotationError) {
+        console.warn('Vision rotation fallback skipped', rotationError);
+      }
+    }
+  } catch (error) {
+    console.warn('Vision rotation setup failed', error);
+  }
+  return buffers;
 };
 
 const runDetection = async (
@@ -318,16 +342,35 @@ export const analyzeBenefitImage = action({
 
     const client = resolveVisionClient();
 
+    let attemptLabel = 'processed';
+    const attempts = [{ label: 'processed', size: processedBuffer.length }];
     let { rawText, textAnnotations, pages } = await runDetection(
       client,
       processedBuffer,
-      'processed',
+      attemptLabel,
     );
     if (!rawText.trim()) {
-      const fallback = await runDetection(client, originalBuffer, 'original');
+      attemptLabel = 'original';
+      attempts.push({ label: attemptLabel, size: originalBuffer.length });
+      const fallback = await runDetection(client, originalBuffer, attemptLabel);
       rawText = fallback.rawText;
       textAnnotations = fallback.textAnnotations;
       pages = fallback.pages;
+    }
+
+    if (!rawText.trim()) {
+      const rotatedBuffers = await rotateBuffers(originalBuffer);
+      for (const [index, altBuffer] of rotatedBuffers.entries()) {
+        attemptLabel = `rotated_${(index + 1) * 90}`;
+        attempts.push({ label: attemptLabel, size: altBuffer.length });
+        const rotatedResult = await runDetection(client, altBuffer, attemptLabel);
+        rawText = rotatedResult.rawText;
+        textAnnotations = rotatedResult.textAnnotations;
+        pages = rotatedResult.pages;
+        if (rawText.trim()) {
+          break;
+        }
+      }
     }
 
     if (!rawText.trim()) {
@@ -345,6 +388,7 @@ export const analyzeBenefitImage = action({
           textAnnotations,
           documentPages: pages,
           multipartDecoded: Boolean(multipart),
+          attempts,
         },
       };
     }
