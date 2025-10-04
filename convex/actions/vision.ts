@@ -11,6 +11,7 @@ type PreprocessedImage = {
     width: number;
     height: number;
   };
+  scale: (factor: number) => PreprocessedImage;
   scaleToFit: (w: number, h: number, mode?: unknown) => PreprocessedImage;
   normalize: () => PreprocessedImage;
   contrast: (value: number) => PreprocessedImage;
@@ -68,14 +69,35 @@ const resolveVisionClient = (): ImageAnnotatorClient => {
 const preprocessImage = async (buffer: Buffer): Promise<Buffer> => {
   try {
     /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
-    const image = (await Jimp.read(buffer)) as unknown as PreprocessedImage;
-    const needsUpscale = image.bitmap.width < 960 && image.bitmap.height < 960;
-    if (needsUpscale) {
-      image.scaleToFit(1280, 1280, Jimp.RESIZE_BICUBIC);
+    const jimpImage = (await Jimp.read(buffer)) as unknown as PreprocessedImage;
+    if (jimpImage.bitmap && (jimpImage.bitmap.width < 960 || jimpImage.bitmap.height < 960)) {
+      const targetWidth = Math.max(jimpImage.bitmap.width, 960);
+      const targetHeight = Math.max(jimpImage.bitmap.height, 960);
+      const scaleFactor = Math.min(
+        targetWidth / jimpImage.bitmap.width,
+        targetHeight / jimpImage.bitmap.height,
+      );
+      if (scaleFactor > 1 && typeof jimpImage.scale === 'function') {
+        jimpImage.scale(scaleFactor);
+      }
     }
-    image.normalize().contrast(0.15).greyscale();
-    return await image.quality(90).getBufferAsync(Jimp.MIME_JPEG);
+    if (typeof jimpImage.normalize === 'function') {
+      jimpImage.normalize();
+    }
+    if (typeof jimpImage.contrast === 'function') {
+      jimpImage.contrast(0.15);
+    }
+    if (typeof jimpImage.greyscale === 'function') {
+      jimpImage.greyscale();
+    }
+    const mime = (Jimp as unknown as { MIME_JPEG?: string }).MIME_JPEG ?? 'image/jpeg';
+    if (typeof jimpImage.getBufferAsync === 'function') {
+      const processed = await jimpImage.getBufferAsync(mime);
+      /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
+      return processed;
+    }
     /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
+    return buffer;
   } catch (error) {
     console.warn('Vision preprocessing skipped', error);
     return buffer;
