@@ -25,7 +25,7 @@ const AppNavigator = (): React.ReactElement => {
           name="Wallet"
           component={BenefitOverviewScreen}
           options={({ navigation }) => ({
-            title: 'Benefit Wallet',
+            title: 'Wallet',
             headerTitleAlign: 'center',
             headerRight: () => (
               <Button title="Add" onPress={() => navigation.navigate('AddBenefit')} />
