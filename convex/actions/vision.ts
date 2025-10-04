@@ -119,10 +119,20 @@ const extractMultipartFile = (
         return match[1];
       }
     }
-    if (buffer.subarray(0, 2).toString('ascii') === '--') {
-      const lineEnd = buffer.indexOf(Buffer.from('\r\n'));
-      if (lineEnd !== -1) {
-        return buffer.subarray(2, lineEnd).toString('ascii').trim();
+
+    const searchLimit = Math.min(buffer.length, 2048);
+    for (let i = 0; i < searchLimit - 2; i++) {
+      if (buffer[i] === 0x2d && buffer[i + 1] === 0x2d) {
+        let end = i + 2;
+        while (end < buffer.length && buffer[end] !== 0x0d && buffer[end] !== 0x0a) {
+          end += 1;
+        }
+        if (end > i + 2) {
+          return buffer
+            .subarray(i + 2, end)
+            .toString('ascii')
+            .trim();
+        }
       }
     }
     return null;
