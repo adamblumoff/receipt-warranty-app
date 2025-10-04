@@ -102,10 +102,7 @@ export const deriveFieldsFromLines = (
       'redeem',
     ]);
     const candidateIso = /thru|through|until/i.test(line)
-      ? isoValues.reduce(
-          (latest, current) => (current > latest ? current : latest),
-          isoValues[0],
-        )
+      ? isoValues.reduce((latest, current) => (current > latest ? current : latest), isoValues[0])
       : isoValues[0];
 
     if (
