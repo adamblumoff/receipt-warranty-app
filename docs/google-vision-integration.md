@@ -26,7 +26,7 @@ Use Google Cloud Vision to extract structured details from uploaded coupon and w
 4. Never commit raw JSON keys; rotate immediately if exposure occurs.
 
 ## 3. Install Backend Dependencies
-Run: `npm install @google-cloud/vision --workspace @receipt-warranty/convex`.
+Run: `npm install @google-cloud/vision google-auth-library --workspace @receipt-warranty/convex`.
 Add `jimp` to preprocess low-quality uploads (denoise + upscale) before passing them to Vision. This keeps heavy image tooling on the backend only.
 Create a thin upload helper (`convex/mutations/uploads.ts`) returning `ctx.storage.generateUploadUrl()` so the mobile app can request signed URLs without touching the built-in storage module directly.
 
@@ -42,7 +42,7 @@ Create a thin upload helper (`convex/mutations/uploads.ts`) returning `ctx.stora
      projectId: process.env.GOOGLE_VISION_PROJECT_ID,
    });
    ```
-3. Expose actions such as `analyzeBenefitImage` that accept a Convex storage ID, normalize the uploaded bytes (handles raw uploads or `multipart/form-data` from React Native), run both `textDetection` and `documentTextDetection`, and return normalized field suggestions (merchant, purchase date, expiry, total).
+3. Expose actions such as `analyzeBenefitImage` that accept a Convex storage ID, normalize the uploaded bytes (handles raw uploads or `multipart/form-data` from React Native), instantiate a `GoogleAuth` client (scoped to `https://www.googleapis.com/auth/cloud-platform`), run both `textDetection` and `documentTextDetection`, and return normalized field suggestions (merchant, purchase date, expiry, total).
 4. Update `convex/cron.ts` if reminder scheduling should react to parsed expiry dates.
 5. Run `npx convex codegen` after adding the action or upload mutation.
 

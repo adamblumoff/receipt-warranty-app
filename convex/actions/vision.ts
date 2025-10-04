@@ -4,6 +4,7 @@ import { action } from '../_generated/server';
 import { v } from 'convex/values';
 import { ConvexError } from 'convex/values';
 import { ImageAnnotatorClient } from '@google-cloud/vision';
+import { JWT } from 'google-auth-library';
 import { Jimp } from 'jimp';
 
 type PreprocessedImage = {
@@ -57,10 +58,11 @@ const resolveVisionClient = (): ImageAnnotatorClient => {
 
   cachedClient = new ImageAnnotatorClient({
     projectId,
-    credentials: {
-      client_email: clientEmail,
-      private_key: privateKey,
-    },
+    authClient: new JWT({
+      email: clientEmail,
+      key: privateKey,
+      scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+    }),
   });
 
   return cachedClient;
