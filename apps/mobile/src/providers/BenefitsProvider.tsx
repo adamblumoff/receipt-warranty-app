@@ -8,7 +8,8 @@ import React, {
   useState,
 } from 'react';
 import { useConvex, useMutation } from 'convex/react';
-import { uploadAsync, FileSystemUploadType } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
+import { FileSystemUploadType } from 'expo-file-system/legacy';
 import { v4 as uuid } from 'uuid';
 import type {
   AnalyzeBenefitImageParams,
@@ -307,12 +308,16 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
     async ({ uri, mimeType, benefitType }) => {
       const uploadUrl = await generateUploadUrl({});
       /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
-      const uploadResponse = await uploadAsync(uploadUrl, uri, {
+      const uploadResponse = await FileSystem.uploadAsync(uploadUrl, uri, {
         httpMethod: 'POST',
         headers: {
           'Content-Type': mimeType,
         },
-        uploadType: FileSystemUploadType.BINARY_CONTENT,
+        uploadType:
+          (FileSystemUploadType?.BINARY_CONTENT as number | undefined) ??
+          (FileSystem as unknown as { FileSystemUploadType?: { BINARY_CONTENT?: number } })
+            .FileSystemUploadType?.BINARY_CONTENT ??
+          0,
       });
       /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
 
