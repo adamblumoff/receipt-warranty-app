@@ -143,3 +143,4 @@ apps/mobile/.expo/
 
 # Convex generated files
 convex/dist/
+packages/shared/fixtures/

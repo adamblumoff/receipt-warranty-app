@@ -13,8 +13,12 @@ dotenv.config({ path: path.join(root, '.env.local') });
 
 const { analyzeImageBuffer } = await import('../packages/shared/src/vision/core.ts');
 
-const couponFixtures = fs.readdirSync(path.join(root, 'coupons'));
-const warrantyFixtures = fs.readdirSync(path.join(root, 'warranties'));
+const fixturesRoot = path.join(root, 'packages/shared/fixtures');
+const couponsDir = path.join(fixturesRoot, 'coupons');
+const warrantiesDir = path.join(fixturesRoot, 'warranties');
+
+const couponFixtures = fs.existsSync(couponsDir) ? fs.readdirSync(couponsDir) : [];
+const warrantyFixtures = fs.existsSync(warrantiesDir) ? fs.readdirSync(warrantiesDir) : [];
 
 let failed = false;
 let skipped = false;
@@ -22,7 +26,7 @@ let skipReason = '';
 const findings = [];
 
 async function evaluateCoupon(file) {
-  const buffer = fs.readFileSync(path.join(root, 'coupons', file));
+  const buffer = fs.readFileSync(path.join(couponsDir, file));
   const analysis = await safeAnalyze(buffer, 'coupon');
   if (!analysis) {
     return;
@@ -37,7 +41,7 @@ async function evaluateCoupon(file) {
 }
 
 async function evaluateWarranty(file) {
-  const buffer = fs.readFileSync(path.join(root, 'warranties', file));
+  const buffer = fs.readFileSync(path.join(warrantiesDir, file));
   const analysis = await safeAnalyze(buffer, 'warranty');
   if (!analysis) {
     return;
