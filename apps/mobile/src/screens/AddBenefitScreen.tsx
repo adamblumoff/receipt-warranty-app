@@ -11,7 +11,7 @@ import {
   Platform,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -377,11 +377,14 @@ const AddBenefitScreen = (): React.ReactElement => {
         });
       }
 
-      Alert.alert('Saved', 'Benefit added to your wallet.');
-      navigation.navigate('Wallet');
       setCouponForm(EMPTY_COUPON);
       setWarrantyForm(EMPTY_WARRANTY);
       setAnalysis(null);
+      const resetAction = CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Wallet' as keyof RootStackParamList }],
+      });
+      navigation.dispatch(resetAction);
     } catch (error) {
       console.warn('Failed to save benefit', error);
       Alert.alert('Unable to save', 'Please try again.');
@@ -706,7 +709,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#ffffff',
   },
   content: {
     paddingHorizontal: 24,

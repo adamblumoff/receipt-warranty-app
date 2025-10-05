@@ -268,7 +268,7 @@ const BenefitOverviewScreen = ({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
   },
   scroll: {
     flex: 1,

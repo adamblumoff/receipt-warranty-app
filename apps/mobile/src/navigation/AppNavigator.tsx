@@ -28,6 +28,8 @@ const AppNavigator = (): React.ReactElement => {
         screenOptions={{
           header: (props) => <AppHeader {...props} />,
           headerTitleAlign: 'center',
+          headerStyle: styles.header,
+          headerShadowVisible: false,
         }}
       >
         <Stack.Screen
@@ -69,6 +71,9 @@ const AppNavigator = (): React.ReactElement => {
 export default AppNavigator;
 
 const styles = StyleSheet.create({
+  header: {
+    backgroundColor: '#f5f5f5',
+  },
   headerButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
