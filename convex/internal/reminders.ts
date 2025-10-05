@@ -42,10 +42,11 @@ export const checkExpiringBenefits = internalMutation({
       }
 
       for (const threshold of THRESHOLDS) {
-        const reminderDate = new Date(targetDate);
-        reminderDate.setUTCDate(reminderDate.getUTCDate() - threshold.days);
+        const daysDiff = Math.floor(
+          (targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+        );
 
-        if (now >= reminderDate && now <= targetDate) {
+        if (daysDiff === threshold.days) {
           const alreadySent = doc.reminderState?.[threshold.key];
           if (!alreadySent) {
             const triggeredAt = new Date().toISOString();
