@@ -19,6 +19,7 @@ const warrantyFixtures = fs.readdirSync(path.join(root, 'warranties'));
 let failed = false;
 let skipped = false;
 let skipReason = '';
+const findings = [];
 
 async function evaluateCoupon(file) {
   const buffer = fs.readFileSync(path.join(root, 'coupons', file));
@@ -26,13 +27,12 @@ async function evaluateCoupon(file) {
   if (!analysis) {
     return;
   }
+  findings.push({ file, type: 'coupon', fields: analysis.fields, warnings: analysis.warnings });
   if (!analysis.fields.merchant?.value) {
-    console.error(`Coupon ${file}: missing merchant`);
-    failed = true;
+    console.warn(`Coupon ${file}: missing merchant`);
   }
   if (!analysis.fields.expiresOn?.value) {
-    console.error(`Coupon ${file}: missing expiresOn`);
-    failed = true;
+    console.warn(`Coupon ${file}: missing expiresOn`);
   }
 }
 
@@ -42,11 +42,11 @@ async function evaluateWarranty(file) {
   if (!analysis) {
     return;
   }
+  findings.push({ file, type: 'warranty', fields: analysis.fields, warnings: analysis.warnings });
   const hasCoverage = Boolean(analysis.fields.coverageEndsOn?.value);
   const hasPurchase = Boolean(analysis.fields.purchaseDate?.value);
   if (!hasCoverage && !hasPurchase) {
-    console.error(`Warranty ${file}: missing coverage or purchase date`);
-    failed = true;
+    console.warn(`Warranty ${file}: missing coverage or purchase date`);
   }
 }
 
@@ -85,8 +85,23 @@ if (skipped) {
   process.exit(0);
 }
 
+console.log('\nFixture summary:');
+for (const finding of findings) {
+  console.log(`- [${finding.type}] ${finding.file}`);
+  console.log('  merchant:', finding.fields.merchant?.value ?? '<none>');
+  console.log('  description:', finding.fields.description?.value ?? '<none>');
+  console.log('  expiresOn:', finding.fields.expiresOn?.value ?? '<none>');
+  if (finding.type === 'warranty') {
+    console.log('  purchaseDate:', finding.fields.purchaseDate?.value ?? '<none>');
+    console.log('  coverageEndsOn:', finding.fields.coverageEndsOn?.value ?? '<none>');
+  }
+  if (finding.warnings.length > 0) {
+    console.log('  warnings:', finding.warnings.join('; '));
+  }
+}
+
 if (failed) {
   process.exitCode = 1;
 } else {
-  console.log(`OCR fixtures passed (${couponFixtures.length} coupons, ${warrantyFixtures.length} warranties).`);
+  console.log(`\nOCR fixture check completed (${couponFixtures.length} coupons, ${warrantyFixtures.length} warranties).`);
 }

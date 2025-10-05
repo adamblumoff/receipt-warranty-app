@@ -1,13 +1,55 @@
 import type { VisionAnalysisResult, VisionFieldSuggestion, BenefitType } from './types';
 
 const DATE_REGEX =
-  /(\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b)|(\b\d{4}[/-]\d{1,2}[/-]\d{1,2}\b)|(\b[A-Za-z]{3,9}\s+\d{1,2},\s*\d{4}\b)/g;
+  /(\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b)|(\b\d{4}[/-]\d{1,2}[/-]\d{1,2}\b)|(\b[A-Za-z]{3,9}\s+\d{1,2}(?:st|nd|rd|th)?[,]?\s*\d{4}\b)|(\b\d{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?[A-Za-z]{3,9}[,]?\s*\d{4}\b)/g;
+
+const MONTH_MAP: Record<string, number> = {
+  jan: 0,
+  january: 0,
+  feb: 1,
+  february: 1,
+  mar: 2,
+  march: 2,
+  apr: 3,
+  april: 3,
+  may: 4,
+  jun: 5,
+  june: 5,
+  jul: 6,
+  july: 6,
+  aug: 7,
+  august: 7,
+  sep: 8,
+  sept: 8,
+  september: 8,
+  oct: 9,
+  october: 9,
+  nov: 10,
+  november: 10,
+  dec: 11,
+  december: 11,
+};
+
+const normalizeNumeric = (year: number, month: number, day: number): string | undefined => {
+  if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+    return undefined;
+  }
+  const normalized = new Date(Date.UTC(year, month, day, 12, 0, 0));
+  if (Number.isNaN(normalized.getTime())) {
+    return undefined;
+  }
+  return normalized.toISOString();
+};
 
 const parseIsoDate = (candidate: string | undefined): string | undefined => {
   if (!candidate) {
     return undefined;
   }
-  const sanitized = candidate.replace(/[,]/g, '').replace(/\s+/g, ' ').trim();
+  const sanitized = candidate
+    .replace(/[,]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\b(\d{1,2})(st|nd|rd|th)\b/gi, '$1')
+    .trim();
 
   const numericMatch = sanitized.match(/^(\d{1,4})[/-](\d{1,2})[/-](\d{1,4})$/);
   if (numericMatch) {
@@ -31,20 +73,34 @@ const parseIsoDate = (candidate: string | undefined): string | undefined => {
     if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
       return undefined;
     }
-    const normalized = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-    if (Number.isNaN(normalized.getTime())) {
-      return undefined;
+    return normalizeNumeric(year, month - 1, day);
+  }
+
+  const monthFirst = sanitized.match(/^([A-Za-z]{3,9})\s+(\d{1,2})\s*(\d{4})$/i);
+  if (monthFirst) {
+    const [, monthText, dayText, yearText] = monthFirst;
+    const monthIndex = MONTH_MAP[monthText.toLowerCase()];
+    if (monthIndex !== undefined) {
+      return normalizeNumeric(Number(yearText), monthIndex, Number(dayText));
     }
-    return normalized.toISOString();
+  }
+
+  const dayFirst = sanitized.match(/^(\d{1,2})\s+(?:of\s+)?([A-Za-z]{3,9})\s*(\d{4})$/i);
+  if (dayFirst) {
+    const [, dayText, monthText, yearText] = dayFirst;
+    const monthIndex = MONTH_MAP[monthText.toLowerCase()];
+    if (monthIndex !== undefined) {
+      return normalizeNumeric(Number(yearText), monthIndex, Number(dayText));
+    }
   }
 
   const parsed = new Date(sanitized);
-  if (Number.isNaN(parsed.getTime())) {
-    return undefined;
+  if (!Number.isNaN(parsed.getTime())) {
+    return new Date(
+      Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 12, 0, 0),
+    ).toISOString();
   }
-  return new Date(
-    Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 12, 0, 0),
-  ).toISOString();
+  return undefined;
 };
 
 const scoreForContext = (line: string, keywords: string[]): number => {
