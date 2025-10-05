@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Platform, StyleSheet, Text } from 'react-native';
+import { Alert, StyleSheet, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { NativeStackHeaderProps } from '@react-navigation/native-stack';
@@ -11,6 +11,7 @@ import WarrantyDetailScreen from '../screens/WarrantyDetailScreen';
 import NoFeedbackPressable from '../components/NoFeedbackPressable';
 import AppHeader from '../components/AppHeader';
 import { CANVAS_COLOR, TEXT_PRIMARY } from '../theme/colors';
+import { triggerSelection } from '../utils/haptics';
 
 export type RootStackParamList = {
   Wallet: undefined;
@@ -25,35 +26,50 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator = (): React.ReactElement => {
   const handleAddPressed = (navigation: NativeStackHeaderProps['navigation']) => {
+    triggerSelection();
+
     const navigateTo = (params?: RootStackParamList['AddBenefit']) => {
       navigation.navigate('AddBenefit', params);
     };
 
-    const options = [
-      {
-        text: 'Scan coupon (camera)',
-        onPress: () => navigateTo({ initialMode: 'coupon', autoScanSource: 'camera' }),
-      },
-      {
-        text: 'Scan warranty (camera)',
-        onPress: () => navigateTo({ initialMode: 'warranty', autoScanSource: 'camera' }),
-      },
-      {
-        text: 'Import from photos',
-        onPress: () => navigateTo({ autoScanSource: 'library' }),
-      },
-      {
-        text: 'Manual entry',
-        onPress: () => navigateTo({}),
-      },
-      { text: 'Cancel', style: 'cancel' },
-    ];
+    const showCaptureOptions = (initialMode: 'coupon' | 'warranty') => {
+      const captureOptions = [
+        {
+          text: 'Scan with camera',
+          onPress: () => navigateTo({ initialMode, autoScanSource: 'camera' }),
+        },
+        {
+          text: 'Import from photos',
+          onPress: () => navigateTo({ initialMode, autoScanSource: 'library' }),
+        },
+        {
+          text: 'Manual entry',
+          onPress: () => navigateTo({ initialMode }),
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ];
 
-    if (Platform.OS === 'android') {
-      Alert.alert('Add benefit', 'Choose how you want to capture a benefit.', options);
-    } else {
-      Alert.alert('Add benefit', undefined, options);
-    }
+      Alert.alert(
+        initialMode === 'coupon' ? 'Add coupon' : 'Add warranty',
+        'Choose how you want to capture this benefit.',
+        captureOptions,
+      );
+    };
+
+    Alert.alert('Add benefit', 'What type of benefit are you adding?', [
+      {
+        text: 'Coupon',
+        onPress: () => showCaptureOptions('coupon'),
+      },
+      {
+        text: 'Warranty',
+        onPress: () => showCaptureOptions('warranty'),
+      },
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+    ]);
   };
 
   return (
