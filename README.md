@@ -30,7 +30,7 @@ Open the tunnel QR code in Expo Go or press `i`/`a` for simulator/emulator. The 
 
 ## Development Workflow
 - `npm run lint` – ESLint (TypeScript + React Native + Prettier)
-- `npm run test` – placeholder for Jest (tests still to come)
+- `npm run test` – Runs the Google Vision fixture sweep (see **OCR regression check** below)
 - `npx convex push` – apply schema/mutations to your deployment
 - `npx convex codegen` – regenerate typed API every time you change Convex functions
 
@@ -42,7 +42,17 @@ Open the tunnel QR code in Expo Go or press `i`/`a` for simulator/emulator. The 
 ## Folder Overview
 - `apps/mobile` – Expo app (screens, providers, services, Metro config)
 - `convex` – Convex schema, queries, mutations, and generated API bindings
-- `packages/shared` – Shared TypeScript types/constants
+- `packages/shared` – Shared TypeScript types/constants as well as OCR fixtures/helpers
 - `docs` – product/design notes (`receipts_warranties_poc.md`, etc.)
 
 For detailed contributor practices see [AGENTS.md](./AGENTS.md).
+
+### OCR regression check
+
+`npm test` loads the sample coupons and warranties in `packages/shared/fixtures/` and pushes each image through the shared Vision pipeline. The script:
+
+1. Reads Google Vision credentials from `.env`/`.env.local` (same variables used by Convex: `GOOGLE_VISION_CLIENT_EMAIL`, `GOOGLE_VISION_PRIVATE_KEY`, `GOOGLE_VISION_PROJECT_ID`).
+2. Logs merchants, descriptions, and detected expiry/coverage dates for every fixture.
+3. Emits warnings (without failing) when the parser can’t extract a field so you can track accuracy over time.
+
+Use this command before shipping parser tweaks or adding new fixtures. If you need to bypass the check locally, run `SKIP_OCR_TESTS=1 npm test`.
