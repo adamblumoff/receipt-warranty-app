@@ -31,12 +31,16 @@ const AppNavigator = (): React.ReactElement => {
 
     const options = [
       {
-        text: 'Scan coupon',
-        onPress: () => navigateTo({ initialMode: 'coupon', autoScanSource: 'library' }),
+        text: 'Scan coupon (camera)',
+        onPress: () => navigateTo({ initialMode: 'coupon', autoScanSource: 'camera' }),
       },
       {
-        text: 'Scan warranty',
-        onPress: () => navigateTo({ initialMode: 'warranty', autoScanSource: 'library' }),
+        text: 'Scan warranty (camera)',
+        onPress: () => navigateTo({ initialMode: 'warranty', autoScanSource: 'camera' }),
+      },
+      {
+        text: 'Import from photos',
+        onPress: () => navigateTo({ autoScanSource: 'library' }),
       },
       {
         text: 'Manual entry',
