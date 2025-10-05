@@ -15,6 +15,7 @@ import {
   TEXT_ACCENT,
   CANVAS_COLOR,
 } from '../theme/colors';
+import { spacing } from '../theme/spacing';
 
 const formatDate = (iso: string): string => {
   const date = new Date(iso);
@@ -184,7 +185,15 @@ const BenefitOverviewScreen = ({
           </View>
         </View>
 
-        {reminders.length > 0 && (
+        {loading && !selectionActive ? (
+          <View style={styles.skeletonStack}>
+            {[0, 1].map((key) => (
+              <View key={`skeleton-${key}`} style={styles.skeletonCard} />
+            ))}
+          </View>
+        ) : null}
+
+        {reminders.length > 0 && !loading && (
           <View style={styles.reminderSection}>
             <Text style={styles.sectionTitle}>Upcoming Reminders</Text>
             {reminders.map((reminder) => (
@@ -227,8 +236,16 @@ const BenefitOverviewScreen = ({
             </Pressable>
           ) : null}
         </View>
-        {coupons.length === 0 ? (
-          <Text style={styles.emptyText}>No coupons saved. Add one to avoid missing a deal.</Text>
+        {loading && coupons.length === 0 ? (
+          <View style={styles.skeletonCard} />
+        ) : coupons.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="pricetag-outline" size={36} color={TEXT_MUTED} />
+            <Text style={styles.emptyTitle}>No coupons yet</Text>
+            <Text style={styles.emptyText}>
+              Use “Add” to scan a coupon and track its expiration.
+            </Text>
+          </View>
         ) : (
           coupons.map((coupon) => (
             <CouponCard
@@ -270,10 +287,14 @@ const BenefitOverviewScreen = ({
             </Pressable>
           ) : null}
         </View>
-        {warranties.length === 0 ? (
-          <Text style={styles.emptyText}>
-            Track warranties here so you remember coverage windows.
-          </Text>
+        {loading && warranties.length === 0 ? (
+          <View style={styles.skeletonCard} />
+        ) : warranties.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="shield-checkmark-outline" size={36} color={TEXT_MUTED} />
+            <Text style={styles.emptyTitle}>No warranties logged</Text>
+            <Text style={styles.emptyText}>Capture receipts to remember coverage windows.</Text>
+          </View>
         ) : (
           warranties.map((warranty) => (
             <WarrantyCard
@@ -336,15 +357,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    padding: 20,
-    paddingBottom: 40,
-    gap: 12,
+    padding: spacing.xl,
+    paddingBottom: spacing.xxl + spacing.lg,
+    gap: spacing.md,
   },
   heroBox: {
     backgroundColor: CANVAS_COLOR,
-    padding: 20,
+    padding: spacing.xl,
     borderRadius: 16,
-    gap: 12,
+    gap: spacing.md,
     shadowColor: '#0000001a',
     shadowOpacity: 0.12,
     shadowRadius: 16,
@@ -389,6 +410,16 @@ const styles = StyleSheet.create({
     color: TEXT_MUTED,
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+  skeletonStack: {
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  skeletonCard: {
+    borderRadius: 14,
+    backgroundColor: '#e5e7eb',
+    height: 90,
+    opacity: 0.6,
   },
   containerWithSelection: {
     paddingBottom: 160,
@@ -455,6 +486,20 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: TEXT_MUTED,
+  },
+  emptyState: {
+    backgroundColor: SURFACE_COLOR,
+    borderRadius: 16,
+    padding: spacing.lg,
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: TEXT_PRIMARY,
   },
   sectionDivider: {
     height: 1,
