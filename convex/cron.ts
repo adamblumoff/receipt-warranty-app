@@ -6,7 +6,7 @@ const crons = cronJobs();
 crons.interval(
   'check-expiring-benefits',
   { hours: 24 },
-  internal.jobs.checkExpiringBenefits.checkExpiringBenefits,
+  internal.internal.reminders.checkExpiringBenefits,
 );
 
 export default crons;

@@ -1,16 +1,14 @@
-'use node';
-
 import { internalMutation } from '../_generated/server';
 import type { Doc, Id } from '../_generated/dataModel';
+
+type BenefitDoc = Doc<'coupons'> | Doc<'warranties'>;
+
+type BenefitType = 'coupon' | 'warranty';
 
 const THRESHOLDS = [
   { key: 'sevenDaySentAt' as const, days: 7 },
   { key: 'oneDaySentAt' as const, days: 1 },
 ];
-
-type BenefitDoc = Doc<'coupons'> | Doc<'warranties'>;
-
-type BenefitType = 'coupon' | 'warranty';
 
 export const checkExpiringBenefits = internalMutation({
   args: {},

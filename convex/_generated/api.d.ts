@@ -15,7 +15,7 @@ import type {
 } from "convex/server";
 import type * as actions_vision from "../actions/vision.js";
 import type * as cron from "../cron.js";
-import type * as jobs_checkExpiringBenefits from "../jobs/checkExpiringBenefits.js";
+import type * as internal_reminders from "../internal/reminders.js";
 import type * as mutations_benefits from "../mutations/benefits.js";
 import type * as mutations_uploads from "../mutations/uploads.js";
 import type * as queries_benefits from "../queries/benefits.js";
@@ -31,7 +31,7 @@ import type * as queries_benefits from "../queries/benefits.js";
 declare const fullApi: ApiFromModules<{
   "actions/vision": typeof actions_vision;
   cron: typeof cron;
-  "jobs/checkExpiringBenefits": typeof jobs_checkExpiringBenefits;
+  "internal/reminders": typeof internal_reminders;
   "mutations/benefits": typeof mutations_benefits;
   "mutations/uploads": typeof mutations_uploads;
   "queries/benefits": typeof queries_benefits;
