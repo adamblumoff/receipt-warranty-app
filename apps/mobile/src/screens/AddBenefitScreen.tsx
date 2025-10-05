@@ -643,10 +643,24 @@ const AddBenefitScreen = (): React.ReactElement => {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Add a benefit</Text>
-        <Text style={styles.subtitle}>
-          Snap or pick a photo to auto-fill fields, then review before saving.
-        </Text>
+        <View style={styles.headerBlock}>
+          <Text style={styles.title}>{mode === 'coupon' ? 'Add a coupon' : 'Add a warranty'}</Text>
+          <Text style={styles.subtitle}>
+            {mode === 'coupon'
+              ? 'Snap or import your coupon so we can capture the expiration for you.'
+              : 'Keep your purchase and coverage details handy to simplify claims later.'}
+          </Text>
+          {routeParams.autoScanSource ? (
+            <View style={styles.inlineBanner}>
+              <Ionicons name="sparkles-outline" size={16} color={TEXT_ACCENT} />
+              <Text style={styles.inlineBannerText}>
+                {routeParams.autoScanSource === 'camera'
+                  ? `Launching camera to capture your ${mode === 'coupon' ? 'coupon.' : 'warranty receipt.'}`
+                  : 'Importing from your photo library.'}
+              </Text>
+            </View>
+          ) : null}
+        </View>
 
         <View style={styles.modeToggle}>
           {(['coupon', 'warranty'] as BenefitType[]).map((type) => (
@@ -768,6 +782,9 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     gap: 20,
   },
+  headerBlock: {
+    gap: 8,
+  },
   title: {
     fontSize: 24,
     fontWeight: '700',
@@ -777,6 +794,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: TEXT_MUTED,
     lineHeight: 22,
+  },
+  inlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: CANVAS_COLOR,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  inlineBannerText: {
+    fontSize: 13,
+    color: TEXT_PRIMARY,
   },
   modeToggle: {
     flexDirection: 'row',
