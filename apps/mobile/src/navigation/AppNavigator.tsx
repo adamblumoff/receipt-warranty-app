@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -7,6 +7,8 @@ import AddBenefitScreen from '../screens/AddBenefitScreen';
 import BenefitOverviewScreen from '../screens/BenefitOverviewScreen';
 import CouponDetailScreen from '../screens/CouponDetailScreen';
 import WarrantyDetailScreen from '../screens/WarrantyDetailScreen';
+import NoFeedbackPressable from '../components/NoFeedbackPressable';
+import AppHeader from '../components/AppHeader';
 
 export type RootStackParamList = {
   Wallet: undefined;
@@ -23,24 +25,10 @@ const AppNavigator = (): React.ReactElement => {
       <Stack.Navigator
         id={undefined}
         initialRouteName="Wallet"
-        screenOptions={({ navigation }) => ({
+        screenOptions={{
+          header: (props) => <AppHeader {...props} />,
           headerTitleAlign: 'center',
-          headerBackTitleVisible: true,
-          headerLeft: ({ canGoBack, label }) => {
-            if (!canGoBack) {
-              return null;
-            }
-            return (
-              <Pressable
-                style={styles.headerBackButton}
-                onPress={() => navigation.goBack()}
-                hitSlop={12}
-              >
-                <Text style={styles.headerBackText}>{label ? `‹ ${label}` : '‹ Back'}</Text>
-              </Pressable>
-            );
-          },
-        })}
+        }}
       >
         <Stack.Screen
           name="Wallet"
@@ -48,13 +36,13 @@ const AppNavigator = (): React.ReactElement => {
           options={({ navigation }) => ({
             title: 'Wallet',
             headerRight: () => (
-              <Pressable
+              <NoFeedbackPressable
                 style={styles.headerButton}
                 onPress={() => navigation.navigate('AddBenefit')}
                 hitSlop={8}
               >
                 <Text style={styles.headerButtonText}>Add</Text>
-              </Pressable>
+              </NoFeedbackPressable>
             ),
           })}
         />
@@ -90,15 +78,5 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontSize: 15,
     fontWeight: '600',
-  },
-  headerBackButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  headerBackText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
   },
 });

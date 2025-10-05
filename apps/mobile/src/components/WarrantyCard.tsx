@@ -1,6 +1,7 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { Warranty } from '@receipt-warranty/shared';
+import NoFeedbackPressable from './NoFeedbackPressable';
 
 interface WarrantyCardProps {
   warranty: Warranty;
@@ -50,14 +51,9 @@ const WarrantyCard = ({
   };
 
   return (
-    <Pressable
+    <NoFeedbackPressable
       onPress={handlePress}
-      style={({ pressed }) => [
-        styles.card,
-        selectable && styles.cardSelectable,
-        selected && styles.cardSelected,
-        pressed && styles.cardPressed,
-      ]}
+      style={[styles.card, selectable && styles.cardSelectable, selected && styles.cardSelected]}
     >
       {selectable ? (
         <View style={[styles.selectIndicator, selected && styles.selectIndicatorSelected]}>
@@ -72,7 +68,7 @@ const WarrantyCard = ({
         Purchased {formatDateSafe(warranty.purchaseDate)} at {warranty.merchant}
       </Text>
       <Text style={styles.meta}>Coverage ends {formatDateSafe(warranty.coverageEndsOn)}</Text>
-    </Pressable>
+    </NoFeedbackPressable>
   );
 };
 
@@ -89,9 +85,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 1,
     position: 'relative',
-  },
-  cardPressed: {
-    opacity: 0.85,
   },
   cardSelectable: {
     paddingRight: 44,

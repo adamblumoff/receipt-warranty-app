@@ -1,6 +1,7 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { Coupon } from '@receipt-warranty/shared';
+import NoFeedbackPressable from './NoFeedbackPressable';
 
 interface CouponCardProps {
   coupon: Coupon;
@@ -34,14 +35,9 @@ const CouponCard = ({
   };
 
   return (
-    <Pressable
+    <NoFeedbackPressable
       onPress={handlePress}
-      style={({ pressed }) => [
-        styles.card,
-        selectable && styles.cardSelectable,
-        selected && styles.cardSelected,
-        pressed && styles.cardPressed,
-      ]}
+      style={[styles.card, selectable && styles.cardSelectable, selected && styles.cardSelected]}
     >
       {selectable ? (
         <View style={[styles.selectIndicator, selected && styles.selectIndicatorSelected]}>
@@ -54,7 +50,7 @@ const CouponCard = ({
       </View>
       <Text style={styles.description}>{coupon.description}</Text>
       <Text style={styles.meta}>Expires {dateFormatter.format(new Date(coupon.expiresOn))}</Text>
-    </Pressable>
+    </NoFeedbackPressable>
   );
 };
 
@@ -71,9 +67,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 1,
     position: 'relative',
-  },
-  cardPressed: {
-    opacity: 0.85,
   },
   cardSelectable: {
     paddingRight: 44,
