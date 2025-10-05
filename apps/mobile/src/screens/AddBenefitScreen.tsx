@@ -292,6 +292,7 @@ const AddBenefitScreen = (): React.ReactElement => {
       ...prev,
       expiresOn: toUtcMiddayIso(couponDateDraft),
     }));
+    setCouponErrors((prev) => ({ ...prev, expiresOn: undefined }));
     setCouponDatePickerVisible(false);
   };
 
@@ -658,6 +659,7 @@ const AddBenefitScreen = (): React.ReactElement => {
                       ...prev,
                       purchaseDate: toUtcMiddayIso(warrantyPurchaseDraft),
                     }));
+                    setWarrantyErrors((prev) => ({ ...prev, purchaseDate: undefined }));
                     setWarrantyPurchasePickerVisible(false);
                   }}
                 >
@@ -703,6 +705,7 @@ const AddBenefitScreen = (): React.ReactElement => {
                       ...prev,
                       coverageEndsOn: toUtcMiddayIso(warrantyCoverageDraft),
                     }));
+                    setWarrantyErrors((prev) => ({ ...prev, coverageEndsOn: undefined }));
                     setWarrantyCoveragePickerVisible(false);
                   }}
                 >
