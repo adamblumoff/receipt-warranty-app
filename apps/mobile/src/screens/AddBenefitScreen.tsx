@@ -23,6 +23,14 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useBenefits } from '../providers/BenefitsProvider';
+import {
+  SURFACE_COLOR,
+  CANVAS_COLOR,
+  TEXT_PRIMARY,
+  TEXT_MUTED,
+  TEXT_ACCENT,
+  TEXT_WARNING,
+} from '../theme/colors';
 import type { BenefitType, VisionAnalysisResult } from '@receipt-warranty/shared';
 const logTiming = (label: string, start: number): void => {
   const duration = Date.now() - start;
@@ -705,11 +713,11 @@ const AddBenefitScreen = (): React.ReactElement => {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: SURFACE_COLOR,
   },
   scroll: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: SURFACE_COLOR,
   },
   content: {
     paddingHorizontal: 24,
@@ -720,11 +728,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
+    color: TEXT_PRIMARY,
   },
   subtitle: {
     fontSize: 15,
-    color: '#4b5563',
+    color: TEXT_MUTED,
     lineHeight: 22,
   },
   modeToggle: {
@@ -757,7 +765,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   scanButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: TEXT_ACCENT,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -775,13 +783,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   scanTextSecondary: {
-    color: '#1f2937',
+    color: TEXT_PRIMARY,
     fontSize: 16,
     fontWeight: '600',
   },
   section: {
     gap: 12,
-    backgroundColor: '#fff',
+    backgroundColor: SURFACE_COLOR,
     borderRadius: 16,
     padding: 16,
     shadowColor: '#000',
@@ -793,7 +801,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#374151',
+    color: TEXT_PRIMARY,
   },
   input: {
     borderWidth: 1,
@@ -802,8 +810,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
-    backgroundColor: '#fff',
-    color: '#111827',
+    backgroundColor: SURFACE_COLOR,
+    color: TEXT_PRIMARY,
   },
   dateInput: {
     justifyContent: 'center',
@@ -814,7 +822,7 @@ const styles = StyleSheet.create({
   },
   dateInputPlaceholder: {
     fontSize: 15,
-    color: '#9ca3af',
+    color: TEXT_MUTED,
   },
   multiline: {
     minHeight: 80,
@@ -835,7 +843,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   previewBox: {
-    backgroundColor: '#f4f4f5',
+    backgroundColor: CANVAS_COLOR,
     borderRadius: 12,
     padding: 16,
     gap: 6,
@@ -843,11 +851,11 @@ const styles = StyleSheet.create({
   previewTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1f2937',
+    color: TEXT_PRIMARY,
   },
   previewLine: {
     fontSize: 14,
-    color: '#374151',
+    color: TEXT_PRIMARY,
   },
   warningBox: {
     backgroundColor: '#fff7ed',
@@ -860,11 +868,11 @@ const styles = StyleSheet.create({
   warningTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#9a3412',
+    color: TEXT_WARNING,
   },
   warningText: {
     fontSize: 13,
-    color: '#9a3412',
+    color: TEXT_WARNING,
   },
   modalOverlay: {
     flex: 1,

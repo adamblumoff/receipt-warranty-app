@@ -4,6 +4,7 @@ import type { NativeStackHeaderProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import NoFeedbackPressable from './NoFeedbackPressable';
+import { CANVAS_COLOR, TEXT_PRIMARY } from '../theme/colors';
 
 const HEADER_HEIGHT = 44;
 const SAFE_AREA_REDUCTION = 55;
@@ -11,7 +12,7 @@ const SAFE_AREA_REDUCTION = 55;
 const AppHeader = ({ navigation, options, route, back }: NativeStackHeaderProps) => {
   const insets = useSafeAreaInsets();
   const title = options.title ?? route.name;
-  const tintColor = options.headerTintColor ?? '#111827';
+  const tintColor = options.headerTintColor ?? TEXT_PRIMARY;
 
   const renderLeft = () => {
     if (back) {
@@ -67,7 +68,7 @@ const AppHeader = ({ navigation, options, route, back }: NativeStackHeaderProps)
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: CANVAS_COLOR,
   },
   content: {
     flexDirection: 'row',
@@ -92,7 +93,7 @@ const styles = StyleSheet.create({
     minWidth: 40,
   },
   backText: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '500',
   },
   title: {

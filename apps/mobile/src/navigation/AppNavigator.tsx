@@ -9,6 +9,7 @@ import CouponDetailScreen from '../screens/CouponDetailScreen';
 import WarrantyDetailScreen from '../screens/WarrantyDetailScreen';
 import NoFeedbackPressable from '../components/NoFeedbackPressable';
 import AppHeader from '../components/AppHeader';
+import { CANVAS_COLOR, TEXT_PRIMARY } from '../theme/colors';
 
 export type RootStackParamList = {
   Wallet: undefined;
@@ -72,7 +73,7 @@ export default AppNavigator;
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: CANVAS_COLOR,
   },
   headerButton: {
     paddingHorizontal: 12,
@@ -80,7 +81,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   headerButtonText: {
-    color: '#111827',
+    color: TEXT_PRIMARY,
     fontSize: 15,
     fontWeight: '600',
   },

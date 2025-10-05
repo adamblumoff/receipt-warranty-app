@@ -23,6 +23,7 @@ Use strict TypeScript throughout. Prettier formatting: 2-space indent, single qu
 - `AddBenefitScreen` lets contributors capture a benefit photo (camera or gallery), transcodes to JPEG with `expo-image-manipulator`, runs Google Vision OCR via `analyzeBenefitImage`, and pre-fills coupon/warranty fields before saving.
 - Successful saves dispatch a `CommonActions.reset` back to `Wallet`, so avoid stacking navigations when linking into `AddBenefitScreen`; always assume the stack is collapsed after creation.
 - Navigation buttons use `NoFeedbackPressable` from `apps/mobile/src/components/` to avoid pressed-state flashes when transitioning screens; reuse it for future navigation triggers.
+- Shared UI colors live under `apps/mobile/src/theme/colors.ts`; import from there instead of hardcoding hex values to keep the mobile palette consistent.
 
 ## Testing Guidelines
 Target Jest + React Native Testing Library for the Expo app and Convex’s testing harness for backend logic. Place mobile tests in `apps/mobile/__tests__/` mirroring screen/component names (`BenefitOverviewScreen.test.tsx`) and backend tests in `convex/__tests__/`. Aim for ≥80 % coverage on capture/import flows, sync logic, and reminder scheduling.

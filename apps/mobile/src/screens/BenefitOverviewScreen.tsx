@@ -6,6 +6,7 @@ import CouponCard from '../components/CouponCard';
 import WarrantyCard from '../components/WarrantyCard';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useBenefits } from '../providers/BenefitsProvider';
+import { SURFACE_COLOR, TEXT_MUTED, TEXT_PRIMARY, TEXT_ACCENT } from '../theme/colors';
 
 const formatDate = (iso: string): string => {
   const date = new Date(iso);
@@ -268,7 +269,7 @@ const BenefitOverviewScreen = ({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: SURFACE_COLOR,
   },
   scroll: {
     flex: 1,
@@ -284,7 +285,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#111827',
+    color: TEXT_PRIMARY,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -305,7 +306,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e7ff',
   },
   headerActionSelectText: {
-    color: '#1d4ed8',
+    color: TEXT_ACCENT,
   },
   headerActionCancel: {
     backgroundColor: '#e5e7eb',
@@ -333,7 +334,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: TEXT_MUTED,
   },
   sectionDivider: {
     height: 1,
