@@ -64,3 +64,21 @@ export const deleteWarranty = mutation({
     await ctx.db.delete(args.id);
   },
 });
+
+export const deleteCouponsBulk = mutation({
+  args: {
+    ids: v.array(v.id('coupons')),
+  },
+  handler: async (ctx, args) => {
+    await Promise.all(args.ids.map((id) => ctx.db.delete(id)));
+  },
+});
+
+export const deleteWarrantiesBulk = mutation({
+  args: {
+    ids: v.array(v.id('warranties')),
+  },
+  handler: async (ctx, args) => {
+    await Promise.all(args.ids.map((id) => ctx.db.delete(id)));
+  },
+});

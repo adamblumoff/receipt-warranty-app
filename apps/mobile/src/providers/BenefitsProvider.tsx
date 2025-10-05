@@ -52,6 +52,8 @@ interface BenefitsContextValue {
   addWarranty: (warranty: Warranty) => Promise<void>;
   removeCoupon: (couponId: string) => Promise<void>;
   removeWarranty: (warrantyId: string) => Promise<void>;
+  removeCouponsBulk: (couponIds: string[]) => Promise<void>;
+  removeWarrantiesBulk: (warrantyIds: string[]) => Promise<void>;
   getCouponById: (id: string) => Coupon | undefined;
   getWarrantyById: (id: string) => Warranty | undefined;
   refreshBenefits: () => Promise<void>;
@@ -109,6 +111,8 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
   const addWarrantyMutation = useMutation(api.mutations.benefits.addWarranty);
   const deleteCouponMutation = useMutation(api.mutations.benefits.deleteCoupon);
   const deleteWarrantyMutation = useMutation(api.mutations.benefits.deleteWarranty);
+  const deleteCouponsBulkMutation = useMutation(api.mutations.benefits.deleteCouponsBulk);
+  const deleteWarrantiesBulkMutation = useMutation(api.mutations.benefits.deleteWarrantiesBulk);
   const generateUploadUrl = useMutation(api.mutations.uploads.generateUploadUrl);
   const registerPushTokenMutation = useMutation(api.mutations.notifications.registerPushToken);
 
@@ -337,6 +341,62 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
     [deleteWarrantyMutation, fetchRemote, persist],
   );
 
+  const removeCouponsBulk = useCallback<BenefitsContextValue['removeCouponsBulk']>(
+    async (couponIds) => {
+      if (!couponIds.length) {
+        return;
+      }
+      const idSet = new Set(couponIds);
+      const nextCoupons = couponsRef.current.filter((coupon) => !idSet.has(coupon.id));
+      setCoupons(nextCoupons);
+      couponsRef.current = nextCoupons;
+      await persist({ coupons: nextCoupons, warranties: warrantiesRef.current });
+
+      const remoteIds = couponIds
+        .filter((id) => !id.startsWith('local-'))
+        .map((id) => id as Id<'coupons'>);
+      if (remoteIds.length === 0) {
+        return;
+      }
+
+      try {
+        await deleteCouponsBulkMutation({ ids: remoteIds });
+        void fetchRemote();
+      } catch (error) {
+        console.warn('Failed to delete coupons from Convex', error);
+      }
+    },
+    [deleteCouponsBulkMutation, fetchRemote, persist],
+  );
+
+  const removeWarrantiesBulk = useCallback<BenefitsContextValue['removeWarrantiesBulk']>(
+    async (warrantyIds) => {
+      if (!warrantyIds.length) {
+        return;
+      }
+      const idSet = new Set(warrantyIds);
+      const nextWarranties = warrantiesRef.current.filter((warranty) => !idSet.has(warranty.id));
+      setWarranties(nextWarranties);
+      warrantiesRef.current = nextWarranties;
+      await persist({ coupons: couponsRef.current, warranties: nextWarranties });
+
+      const remoteIds = warrantyIds
+        .filter((id) => !id.startsWith('local-'))
+        .map((id) => id as Id<'warranties'>);
+      if (remoteIds.length === 0) {
+        return;
+      }
+
+      try {
+        await deleteWarrantiesBulkMutation({ ids: remoteIds });
+        void fetchRemote();
+      } catch (error) {
+        console.warn('Failed to delete warranties from Convex', error);
+      }
+    },
+    [deleteWarrantiesBulkMutation, fetchRemote, persist],
+  );
+
   const refreshBenefits = useCallback(async () => {
     await fetchRemote();
   }, [fetchRemote]);
@@ -408,6 +468,8 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
       addWarranty,
       removeCoupon,
       removeWarranty,
+      removeCouponsBulk,
+      removeWarrantiesBulk,
       getCouponById,
       getWarrantyById,
       refreshBenefits,
@@ -424,6 +486,8 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
       addWarranty,
       removeCoupon,
       removeWarranty,
+      removeCouponsBulk,
+      removeWarrantiesBulk,
       getCouponById,
       getWarrantyById,
       refreshBenefits,

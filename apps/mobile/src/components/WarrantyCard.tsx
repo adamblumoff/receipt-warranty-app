@@ -5,6 +5,9 @@ import type { Warranty } from '@receipt-warranty/shared';
 interface WarrantyCardProps {
   warranty: Warranty;
   onPress?: () => void;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -13,25 +16,62 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   year: 'numeric',
 });
 
-const WarrantyCard = ({ warranty, onPress }: WarrantyCardProps): React.ReactElement => {
-  const expiresSoon =
-    new Date(warranty.coverageEndsOn).getTime() - Date.now() < 1000 * 60 * 60 * 24 * 30;
+const toDateSafe = (iso?: string): Date | null => {
+  if (!iso) {
+    return null;
+  }
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const formatDateSafe = (iso?: string): string => {
+  const date = toDateSafe(iso);
+  return date ? dateFormatter.format(date) : '—';
+};
+
+const WarrantyCard = ({
+  warranty,
+  onPress,
+  selectable = false,
+  selected = false,
+  onToggleSelect,
+}: WarrantyCardProps): React.ReactElement => {
+  const coverageDate = toDateSafe(warranty.coverageEndsOn);
+  const expiresSoon = coverageDate
+    ? coverageDate.getTime() - Date.now() < 1000 * 60 * 60 * 24 * 30
+    : false;
+
+  const handlePress = () => {
+    if (selectable) {
+      onToggleSelect?.();
+    } else {
+      onPress?.();
+    }
+  };
 
   return (
     <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      onPress={handlePress}
+      style={({ pressed }) => [
+        styles.card,
+        selectable && styles.cardSelectable,
+        selected && styles.cardSelected,
+        pressed && styles.cardPressed,
+      ]}
     >
+      {selectable ? (
+        <View style={[styles.selectIndicator, selected && styles.selectIndicatorSelected]}>
+          {selected ? <Text style={styles.selectIndicatorText}>✓</Text> : null}
+        </View>
+      ) : null}
       <View style={styles.row}>
         <Text style={styles.product}>{warranty.productName}</Text>
         <Text style={[styles.badge, expiresSoon && styles.badgeUrgent]}>Warranty</Text>
       </View>
       <Text style={styles.meta}>
-        Purchased {dateFormatter.format(new Date(warranty.purchaseDate))} at {warranty.merchant}
+        Purchased {formatDateSafe(warranty.purchaseDate)} at {warranty.merchant}
       </Text>
-      <Text style={styles.meta}>
-        Coverage ends {dateFormatter.format(new Date(warranty.coverageEndsOn))}
-      </Text>
+      <Text style={styles.meta}>Coverage ends {formatDateSafe(warranty.coverageEndsOn)}</Text>
     </Pressable>
   );
 };
@@ -48,9 +88,17 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 1,
+    position: 'relative',
   },
   cardPressed: {
     opacity: 0.85,
+  },
+  cardSelectable: {
+    paddingRight: 44,
+  },
+  cardSelected: {
+    borderWidth: 2,
+    borderColor: '#2563eb',
   },
   row: {
     flexDirection: 'row',
@@ -80,6 +128,27 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: 13,
     color: '#6b7280',
+  },
+  selectIndicator: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  selectIndicatorSelected: {
+    backgroundColor: '#2563eb',
+    borderColor: '#1d4ed8',
+  },
+  selectIndicatorText: {
+    color: '#fff',
+    fontWeight: '700',
   },
 });
 

@@ -53,17 +53,6 @@ const EMPTY_WARRANTY = {
   coverageNotes: '',
 };
 
-const toIsoOrEmpty = (value?: string | number | Date): string => {
-  if (!value) {
-    return '';
-  }
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
-  return toUtcMiddayIso(date);
-};
-
 const toDisplayDate = (iso: string): Date | null => {
   if (!iso) {
     return null;
@@ -80,6 +69,28 @@ const toDisplayDate = (iso: string): Date | null => {
 const toUtcMiddayIso = (date: Date): string =>
   new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0)).toISOString();
 
+const formatReadableDate = (iso?: string): string => {
+  if (!iso) {
+    return 'Select date';
+  }
+  const date = toDisplayDate(iso);
+  if (!date) {
+    return 'Select date';
+  }
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }).format(date);
+  } catch (error) {
+    if (error instanceof RangeError) {
+      return 'Select date';
+    }
+    throw error;
+  }
+};
+
 const AddBenefitScreen = (): React.ReactElement => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { addCoupon, addWarranty, analyzeBenefitImage } = useBenefits();
@@ -92,6 +103,10 @@ const AddBenefitScreen = (): React.ReactElement => {
   const [submitting, setSubmitting] = useState(false);
   const [couponDatePickerVisible, setCouponDatePickerVisible] = useState(false);
   const [couponDateDraft, setCouponDateDraft] = useState<Date>(new Date());
+  const [warrantyPurchasePickerVisible, setWarrantyPurchasePickerVisible] = useState(false);
+  const [warrantyPurchaseDraft, setWarrantyPurchaseDraft] = useState<Date>(new Date());
+  const [warrantyCoveragePickerVisible, setWarrantyCoveragePickerVisible] = useState(false);
+  const [warrantyCoverageDraft, setWarrantyCoverageDraft] = useState<Date>(new Date());
 
   useEffect(() => {
     if (couponForm.expiresOn) {
@@ -102,40 +117,95 @@ const AddBenefitScreen = (): React.ReactElement => {
     }
   }, [couponForm.expiresOn]);
 
-  const couponExpiryDisplay = useMemo(() => {
-    if (!couponForm.expiresOn) {
-      return 'Select date';
+  useEffect(() => {
+    if (warrantyForm.purchaseDate) {
+      const parsed = new Date(warrantyForm.purchaseDate);
+      if (!Number.isNaN(parsed.getTime())) {
+        setWarrantyPurchaseDraft(parsed);
+      }
     }
-    const date = toDisplayDate(couponForm.expiresOn);
-    if (!date) {
-      return 'Select date';
-    }
-    return new Intl.DateTimeFormat(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    }).format(date);
-  }, [couponForm.expiresOn]);
+  }, [warrantyForm.purchaseDate]);
 
-  const openCouponDatePicker = () => {
-    const initial = couponForm.expiresOn ? new Date(couponForm.expiresOn) : new Date();
+  useEffect(() => {
+    if (warrantyForm.coverageEndsOn) {
+      const parsed = new Date(warrantyForm.coverageEndsOn);
+      if (!Number.isNaN(parsed.getTime())) {
+        setWarrantyCoverageDraft(parsed);
+      }
+    }
+  }, [warrantyForm.coverageEndsOn]);
+
+  const couponExpiryDisplay = useMemo(
+    () => formatReadableDate(couponForm.expiresOn),
+    [couponForm.expiresOn],
+  );
+  const warrantyPurchaseDisplay = useMemo(
+    () => formatReadableDate(warrantyForm.purchaseDate),
+    [warrantyForm.purchaseDate],
+  );
+  const warrantyCoverageDisplay = useMemo(
+    () => formatReadableDate(warrantyForm.coverageEndsOn),
+    [warrantyForm.coverageEndsOn],
+  );
+
+  const openDatePicker = (
+    currentIso: string,
+    setDraft: React.Dispatch<React.SetStateAction<Date>>,
+    setVisible: React.Dispatch<React.SetStateAction<boolean>>,
+    onConfirm: (selected: Date) => void,
+  ) => {
+    const initial = currentIso ? new Date(currentIso) : new Date();
     if (Platform.OS === 'android') {
       DateTimePickerAndroid.open({
         value: initial,
         mode: 'date',
         onChange: (_event: DateTimePickerEvent, selectedDate?: Date) => {
           if (selectedDate) {
-            setCouponForm((prev) => ({
-              ...prev,
-              expiresOn: toUtcMiddayIso(selectedDate),
-            }));
+            onConfirm(selectedDate);
           }
         },
       });
     } else {
-      setCouponDateDraft(initial);
-      setCouponDatePickerVisible(true);
+      setDraft(initial);
+      setVisible(true);
     }
+  };
+
+  const openCouponDatePicker = () => {
+    openDatePicker(couponForm.expiresOn, setCouponDateDraft, setCouponDatePickerVisible, (date) => {
+      setCouponForm((prev) => ({
+        ...prev,
+        expiresOn: toUtcMiddayIso(date),
+      }));
+    });
+  };
+
+  const openWarrantyPurchasePicker = () => {
+    openDatePicker(
+      warrantyForm.purchaseDate,
+      setWarrantyPurchaseDraft,
+      setWarrantyPurchasePickerVisible,
+      (date) => {
+        setWarrantyForm((prev) => ({
+          ...prev,
+          purchaseDate: toUtcMiddayIso(date),
+        }));
+      },
+    );
+  };
+
+  const openWarrantyCoveragePicker = () => {
+    openDatePicker(
+      warrantyForm.coverageEndsOn,
+      setWarrantyCoverageDraft,
+      setWarrantyCoveragePickerVisible,
+      (date) => {
+        setWarrantyForm((prev) => ({
+          ...prev,
+          coverageEndsOn: toUtcMiddayIso(date),
+        }));
+      },
+    );
   };
 
   const handleIosCouponDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
@@ -372,21 +442,21 @@ const AddBenefitScreen = (): React.ReactElement => {
         placeholder="Electronics World"
       />
       <Text style={styles.label}>Purchase Date</Text>
-      <TextInput
-        style={styles.input}
-        value={warrantyForm.purchaseDate}
-        onChangeText={(purchaseDate) => setWarrantyForm((prev) => ({ ...prev, purchaseDate }))}
-        placeholder={toIsoOrEmpty(new Date())}
-        autoCapitalize="none"
-      />
+      <Pressable style={[styles.input, styles.dateInput]} onPress={openWarrantyPurchasePicker}>
+        <Text
+          style={warrantyForm.purchaseDate ? styles.dateInputText : styles.dateInputPlaceholder}
+        >
+          {warrantyPurchaseDisplay}
+        </Text>
+      </Pressable>
       <Text style={styles.label}>Coverage Ends On</Text>
-      <TextInput
-        style={styles.input}
-        value={warrantyForm.coverageEndsOn}
-        onChangeText={(coverageEndsOn) => setWarrantyForm((prev) => ({ ...prev, coverageEndsOn }))}
-        placeholder={toIsoOrEmpty(new Date().setFullYear(new Date().getFullYear() + 1))}
-        autoCapitalize="none"
-      />
+      <Pressable style={[styles.input, styles.dateInput]} onPress={openWarrantyCoveragePicker}>
+        <Text
+          style={warrantyForm.coverageEndsOn ? styles.dateInputText : styles.dateInputPlaceholder}
+        >
+          {warrantyCoverageDisplay}
+        </Text>
+      </Pressable>
       <Text style={styles.label}>Coverage Notes (optional)</Text>
       <TextInput
         style={[styles.input, styles.multiline]}
@@ -424,6 +494,96 @@ const AddBenefitScreen = (): React.ReactElement => {
                 <Pressable
                   style={[styles.modalButton, styles.modalPrimaryButton]}
                   onPress={confirmCouponDate}
+                >
+                  <Text style={[styles.modalButtonText, styles.modalPrimaryButtonText]}>Done</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
+      {Platform.OS === 'ios' ? (
+        <Modal
+          transparent
+          animationType="slide"
+          visible={warrantyPurchasePickerVisible}
+          onRequestClose={() => setWarrantyPurchasePickerVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <DateTimePicker
+                value={warrantyPurchaseDraft}
+                mode="date"
+                display="spinner"
+                onChange={(_event, selectedDate) => {
+                  if (selectedDate) {
+                    setWarrantyPurchaseDraft(selectedDate);
+                  }
+                }}
+                style={styles.iosPicker}
+                textColor="#111827"
+              />
+              <View style={styles.modalActions}>
+                <Pressable
+                  style={styles.modalButton}
+                  onPress={() => setWarrantyPurchasePickerVisible(false)}
+                >
+                  <Text style={styles.modalButtonText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.modalButton, styles.modalPrimaryButton]}
+                  onPress={() => {
+                    setWarrantyForm((prev) => ({
+                      ...prev,
+                      purchaseDate: toUtcMiddayIso(warrantyPurchaseDraft),
+                    }));
+                    setWarrantyPurchasePickerVisible(false);
+                  }}
+                >
+                  <Text style={[styles.modalButtonText, styles.modalPrimaryButtonText]}>Done</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
+      {Platform.OS === 'ios' ? (
+        <Modal
+          transparent
+          animationType="slide"
+          visible={warrantyCoveragePickerVisible}
+          onRequestClose={() => setWarrantyCoveragePickerVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <DateTimePicker
+                value={warrantyCoverageDraft}
+                mode="date"
+                display="spinner"
+                onChange={(_event, selectedDate) => {
+                  if (selectedDate) {
+                    setWarrantyCoverageDraft(selectedDate);
+                  }
+                }}
+                style={styles.iosPicker}
+                textColor="#111827"
+              />
+              <View style={styles.modalActions}>
+                <Pressable
+                  style={styles.modalButton}
+                  onPress={() => setWarrantyCoveragePickerVisible(false)}
+                >
+                  <Text style={styles.modalButtonText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.modalButton, styles.modalPrimaryButton]}
+                  onPress={() => {
+                    setWarrantyForm((prev) => ({
+                      ...prev,
+                      coverageEndsOn: toUtcMiddayIso(warrantyCoverageDraft),
+                    }));
+                    setWarrantyCoveragePickerVisible(false);
+                  }}
                 >
                   <Text style={[styles.modalButtonText, styles.modalPrimaryButtonText]}>Done</Text>
                 </Pressable>
@@ -522,9 +682,11 @@ const AddBenefitScreen = (): React.ReactElement => {
             <>
               <Text style={styles.previewLine}>Product: {warrantyForm.productName || '—'}</Text>
               <Text style={styles.previewLine}>Merchant: {warrantyForm.merchant || '—'}</Text>
-              <Text style={styles.previewLine}>Purchased: {warrantyForm.purchaseDate || '—'}</Text>
               <Text style={styles.previewLine}>
-                Coverage Ends: {warrantyForm.coverageEndsOn || '—'}
+                Purchased: {warrantyForm.purchaseDate ? warrantyPurchaseDisplay : '—'}
+              </Text>
+              <Text style={styles.previewLine}>
+                Coverage Ends: {warrantyForm.coverageEndsOn ? warrantyCoverageDisplay : '—'}
               </Text>
             </>
           )}
