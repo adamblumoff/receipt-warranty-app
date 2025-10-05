@@ -439,6 +439,7 @@ const AddBenefitScreen = (): React.ReactElement => {
 
   const renderCouponFields = () => (
     <View style={styles.section}>
+      <Text style={styles.helperText}>We’ll remind you before this coupon expires.</Text>
       <Text style={styles.label}>Merchant</Text>
       <TextInput
         style={styles.input}
@@ -473,6 +474,9 @@ const AddBenefitScreen = (): React.ReactElement => {
 
   const renderWarrantyFields = () => (
     <View style={styles.section}>
+      <Text style={styles.helperText}>
+        Log purchase and coverage dates to simplify warranty claims.
+      </Text>
       <Text style={styles.label}>Product Name</Text>
       <TextInput
         style={styles.input}
@@ -885,6 +889,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: TEXT_PRIMARY,
+  },
+  helperText: {
+    fontSize: 13,
+    color: TEXT_MUTED,
   },
   input: {
     borderWidth: 1,
