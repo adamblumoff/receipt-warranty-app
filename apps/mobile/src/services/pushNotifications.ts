@@ -40,18 +40,22 @@ export const registerForPushNotificationsAsync = async (): Promise<PushRegistrat
     });
   }
 
-  let projectId: string | undefined;
-  if (Constants.expoConfig && 'extra' in Constants.expoConfig) {
-    const extra = (Constants.expoConfig as { extra?: { eas?: { projectId?: string } } }).extra;
-    projectId = extra?.eas?.projectId;
-  }
+  const projectId: string | undefined = (() => {
+    const expoConfig = Constants.expoConfig as
+      | undefined
+      | { extra?: { eas?: { projectId?: string } } };
+    if (expoConfig?.extra?.eas?.projectId) {
+      return expoConfig.extra.eas.projectId;
+    }
+    return Constants.easConfig?.projectId ?? undefined;
+  })();
+
   if (!projectId) {
-    projectId = Constants.easConfig?.projectId ?? undefined;
+    console.warn('Expo projectId not found; push registration skipped.');
+    return null;
   }
 
-  const expoToken = await Notifications.getExpoPushTokenAsync(
-    projectId ? { projectId } : undefined,
-  );
+  const expoToken = await Notifications.getExpoPushTokenAsync({ projectId });
   return {
     token: expoToken.data,
     platform: Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : 'unknown',
