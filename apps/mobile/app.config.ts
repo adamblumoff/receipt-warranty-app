@@ -8,6 +8,10 @@ dotenv.config({ path: path.join(projectRoot, '.env.local') });
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const extra = config.extra ?? {};
+  const eas = {
+    ...(typeof extra.eas === 'object' && extra.eas !== null ? extra.eas : {}),
+    projectId: '28387eb9-ca0e-4c7b-a9ef-589f722bbaca',
+  };
   return {
     ...config,
     name: 'Receipt Warranty Vault',
@@ -46,6 +50,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     extra: {
       ...extra,
+      eas,
       EXPO_PUBLIC_CONVEX_URL: process.env.EXPO_PUBLIC_CONVEX_URL ?? '',
     },
   };
