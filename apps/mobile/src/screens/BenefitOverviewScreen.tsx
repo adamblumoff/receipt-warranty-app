@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { triggerSelection, triggerNotificationSuccess } from '../utils/haptics';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import CouponCard from '../components/CouponCard';
 import WarrantyCard from '../components/WarrantyCard';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useBenefits } from '../providers/BenefitsProvider';
-import { SURFACE_COLOR, TEXT_MUTED, TEXT_PRIMARY, TEXT_ACCENT } from '../theme/colors';
+import {
+  SURFACE_COLOR,
+  TEXT_MUTED,
+  TEXT_PRIMARY,
+  TEXT_ACCENT,
+  CANVAS_COLOR,
+} from '../theme/colors';
 
 const formatDate = (iso: string): string => {
   const date = new Date(iso);
@@ -46,29 +54,37 @@ const BenefitOverviewScreen = ({
   };
 
   const startCouponSelection = () => {
+    triggerSelection();
     setSelectionMode('coupons');
     setSelectedCoupons([]);
     setSelectedWarranties([]);
   };
 
   const startWarrantySelection = () => {
+    triggerSelection();
     setSelectionMode('warranties');
     setSelectedCoupons([]);
     setSelectedWarranties([]);
   };
 
   const toggleCouponSelection = (couponId: string) => {
-    setSelectedCoupons((current) =>
-      current.includes(couponId) ? current.filter((id) => id !== couponId) : [...current, couponId],
-    );
+    setSelectedCoupons((current) => {
+      const next = current.includes(couponId)
+        ? current.filter((id) => id !== couponId)
+        : [...current, couponId];
+      triggerSelection();
+      return next;
+    });
   };
 
   const toggleWarrantySelection = (warrantyId: string) => {
-    setSelectedWarranties((current) =>
-      current.includes(warrantyId)
+    setSelectedWarranties((current) => {
+      const next = current.includes(warrantyId)
         ? current.filter((id) => id !== warrantyId)
-        : [...current, warrantyId],
-    );
+        : [...current, warrantyId];
+      triggerSelection();
+      return next;
+    });
   };
 
   const selectedCount =
@@ -116,6 +132,7 @@ const BenefitOverviewScreen = ({
           style: 'destructive',
           onPress: () => {
             setBulkDeleting(true);
+            triggerNotificationSuccess();
             void (async () => {
               try {
                 if (mode === 'coupons') {
@@ -146,6 +163,27 @@ const BenefitOverviewScreen = ({
           <RefreshControl refreshing={loading} onRefresh={() => void refreshBenefits()} />
         }
       >
+        <View style={styles.heroBox}>
+          <Text style={styles.heroTitle}>Benefit wallet</Text>
+          <Text style={styles.heroSubtitle}>
+            Stay ahead of expirations with quick access to your perks.
+          </Text>
+          <View style={styles.heroStatsRow}>
+            <View style={styles.heroStatCard}>
+              <Text style={styles.heroStatValue}>{coupons.length}</Text>
+              <Text style={styles.heroStatLabel}>
+                {coupons.length === 1 ? 'Coupon' : 'Coupons'}
+              </Text>
+            </View>
+            <View style={styles.heroStatCard}>
+              <Text style={styles.heroStatValue}>{warranties.length}</Text>
+              <Text style={styles.heroStatLabel}>
+                {warranties.length === 1 ? 'Warranty' : 'Warranties'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {reminders.length > 0 && (
           <View style={styles.reminderSection}>
             <Text style={styles.sectionTitle}>Upcoming Reminders</Text>
@@ -167,17 +205,25 @@ const BenefitOverviewScreen = ({
           <Text style={styles.sectionTitle}>Active Coupons</Text>
           {selectionMode === 'coupons' ? (
             <Pressable
-              style={[styles.headerAction, styles.headerActionCancel]}
+              style={[styles.headerAction, styles.headerActionGhost]}
               onPress={exitSelection}
             >
-              <Text style={[styles.headerActionText, styles.headerActionCancelText]}>Cancel</Text>
+              <View style={styles.headerActionContent}>
+                <Ionicons name="close-outline" size={16} color={TEXT_MUTED} />
+                <Text style={[styles.headerActionText, styles.headerActionGhostText]}>Cancel</Text>
+              </View>
             </Pressable>
           ) : selectionMode === 'none' && coupons.length > 0 ? (
             <Pressable
-              style={[styles.headerAction, styles.headerActionSelect]}
+              style={[styles.headerAction, styles.headerActionOutline]}
               onPress={startCouponSelection}
             >
-              <Text style={[styles.headerActionText, styles.headerActionSelectText]}>Select</Text>
+              <View style={styles.headerActionContent}>
+                <Ionicons name="checkmark-circle-outline" size={16} color={TEXT_ACCENT} />
+                <Text style={[styles.headerActionText, styles.headerActionOutlineText]}>
+                  Select
+                </Text>
+              </View>
             </Pressable>
           ) : null}
         </View>
@@ -202,17 +248,25 @@ const BenefitOverviewScreen = ({
           <Text style={styles.sectionTitle}>Warranties</Text>
           {selectionMode === 'warranties' ? (
             <Pressable
-              style={[styles.headerAction, styles.headerActionCancel]}
+              style={[styles.headerAction, styles.headerActionGhost]}
               onPress={exitSelection}
             >
-              <Text style={[styles.headerActionText, styles.headerActionCancelText]}>Cancel</Text>
+              <View style={styles.headerActionContent}>
+                <Ionicons name="close-outline" size={16} color={TEXT_MUTED} />
+                <Text style={[styles.headerActionText, styles.headerActionGhostText]}>Cancel</Text>
+              </View>
             </Pressable>
           ) : selectionMode === 'none' && warranties.length > 0 ? (
             <Pressable
-              style={[styles.headerAction, styles.headerActionSelect]}
+              style={[styles.headerAction, styles.headerActionOutline]}
               onPress={startWarrantySelection}
             >
-              <Text style={[styles.headerActionText, styles.headerActionSelectText]}>Select</Text>
+              <View style={styles.headerActionContent}>
+                <Ionicons name="checkmark-circle-outline" size={16} color={TEXT_ACCENT} />
+                <Text style={[styles.headerActionText, styles.headerActionOutlineText]}>
+                  Select
+                </Text>
+              </View>
             </Pressable>
           ) : null}
         </View>
@@ -251,14 +305,21 @@ const BenefitOverviewScreen = ({
             onPress={confirmBulkDelete}
             disabled={selectedCount === 0 || bulkDeleting}
           >
-            <Text
-              style={[
-                styles.selectionDeleteText,
-                (selectedCount === 0 || bulkDeleting) && styles.selectionDeleteTextDisabled,
-              ]}
-            >
-              {bulkDeleting ? 'Deleting…' : 'Delete selected'}
-            </Text>
+            <View style={styles.selectionDeleteContent}>
+              <Ionicons
+                name="trash-outline"
+                size={18}
+                color={selectedCount === 0 || bulkDeleting ? '#fca5a5' : '#fff'}
+              />
+              <Text
+                style={[
+                  styles.selectionDeleteText,
+                  (selectedCount === 0 || bulkDeleting) && styles.selectionDeleteTextDisabled,
+                ]}
+              >
+                {bulkDeleting ? 'Deleting…' : 'Delete selected'}
+              </Text>
+            </View>
           </Pressable>
         </View>
       ) : null}
@@ -279,6 +340,56 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     gap: 12,
   },
+  heroBox: {
+    backgroundColor: CANVAS_COLOR,
+    padding: 20,
+    borderRadius: 16,
+    gap: 12,
+    shadowColor: '#0000001a',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: TEXT_PRIMARY,
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    color: TEXT_MUTED,
+    lineHeight: 20,
+  },
+  heroStatsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  heroStatCard: {
+    flex: 1,
+    backgroundColor: SURFACE_COLOR,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#00000012',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  heroStatValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: TEXT_PRIMARY,
+  },
+  heroStatLabel: {
+    fontSize: 12,
+    color: TEXT_MUTED,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   containerWithSelection: {
     paddingBottom: 160,
   },
@@ -298,21 +409,30 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
   },
+  headerActionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   headerActionText: {
     fontSize: 13,
     fontWeight: '600',
   },
-  headerActionSelect: {
-    backgroundColor: '#e0e7ff',
+  headerActionOutline: {
+    borderWidth: 1,
+    borderColor: TEXT_ACCENT,
+    backgroundColor: SURFACE_COLOR,
   },
-  headerActionSelectText: {
+  headerActionOutlineText: {
     color: TEXT_ACCENT,
   },
-  headerActionCancel: {
-    backgroundColor: '#e5e7eb',
+  headerActionGhost: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: SURFACE_COLOR,
   },
-  headerActionCancelText: {
-    color: '#374151',
+  headerActionGhostText: {
+    color: TEXT_MUTED,
   },
   reminderSection: {
     gap: 8,
@@ -366,6 +486,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 999,
+  },
+  selectionDeleteContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   selectionDeleteDisabled: {
     backgroundColor: '#7f1d1d',

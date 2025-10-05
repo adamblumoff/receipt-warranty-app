@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { Coupon } from '@receipt-warranty/shared';
 import NoFeedbackPressable from './NoFeedbackPressable';
+import { SURFACE_COLOR, TEXT_PRIMARY, TEXT_MUTED, TEXT_ACCENT } from '../theme/colors';
 
 interface CouponCardProps {
   coupon: Coupon;
@@ -56,7 +57,7 @@ const CouponCard = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: SURFACE_COLOR,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -83,12 +84,12 @@ const styles = StyleSheet.create({
   merchant: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: TEXT_PRIMARY,
   },
   badge: {
     fontSize: 12,
     textTransform: 'uppercase',
-    color: '#2563eb',
+    color: TEXT_ACCENT,
     backgroundColor: '#dbeafe',
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -102,11 +103,11 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 15,
-    color: '#1f2937',
+    color: TEXT_PRIMARY,
   },
   meta: {
     fontSize: 13,
-    color: '#6b7280',
+    color: TEXT_MUTED,
   },
   selectIndicator: {
     position: 'absolute',

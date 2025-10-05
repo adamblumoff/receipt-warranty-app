@@ -25,5 +25,8 @@
     "eslint-plugin-react-native": "^5.0.0",
     "prettier": "^3.3.3",
     "ts-node": "^10.9.2"
+  },
+  "dependencies": {
+    "expo-haptics": "~15.0.7"
   }
 }

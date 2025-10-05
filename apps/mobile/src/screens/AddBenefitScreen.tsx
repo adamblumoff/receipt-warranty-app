@@ -11,6 +11,8 @@ import {
   Platform,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { triggerSelection, triggerImpactLight, triggerNotificationSuccess } from '../utils/haptics';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
@@ -179,6 +181,7 @@ const AddBenefitScreen = (): React.ReactElement => {
   };
 
   const openCouponDatePicker = () => {
+    triggerSelection();
     openDatePicker(couponForm.expiresOn, setCouponDateDraft, setCouponDatePickerVisible, (date) => {
       setCouponForm((prev) => ({
         ...prev,
@@ -188,6 +191,7 @@ const AddBenefitScreen = (): React.ReactElement => {
   };
 
   const openWarrantyPurchasePicker = () => {
+    triggerSelection();
     openDatePicker(
       warrantyForm.purchaseDate,
       setWarrantyPurchaseDraft,
@@ -202,6 +206,7 @@ const AddBenefitScreen = (): React.ReactElement => {
   };
 
   const openWarrantyCoveragePicker = () => {
+    triggerSelection();
     openDatePicker(
       warrantyForm.coverageEndsOn,
       setWarrantyCoverageDraft,
@@ -234,6 +239,7 @@ const AddBenefitScreen = (): React.ReactElement => {
   };
 
   const handleAnalyzeImage = async (source: 'library' | 'camera') => {
+    triggerImpactLight();
     if (source === 'library') {
       const mediaPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!mediaPermission.granted) {
@@ -388,6 +394,7 @@ const AddBenefitScreen = (): React.ReactElement => {
       setCouponForm(EMPTY_COUPON);
       setWarrantyForm(EMPTY_WARRANTY);
       setAnalysis(null);
+      triggerNotificationSuccess();
       const resetAction = CommonActions.reset({
         index: 0,
         routes: [{ name: 'Wallet' as keyof RootStackParamList }],
@@ -617,6 +624,7 @@ const AddBenefitScreen = (): React.ReactElement => {
             <Pressable
               key={type}
               onPress={() => {
+                triggerSelection();
                 setMode(type);
               }}
               style={[styles.modeButton, mode === type && styles.modeButtonActive]}
@@ -637,7 +645,10 @@ const AddBenefitScreen = (): React.ReactElement => {
             {analyzing ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.scanText}>Scan from gallery</Text>
+              <View style={styles.scanButtonContent}>
+                <Ionicons name="images-outline" size={18} color="#fff" />
+                <Text style={styles.scanText}>Scan from gallery</Text>
+              </View>
             )}
           </Pressable>
           <Pressable
@@ -652,7 +663,10 @@ const AddBenefitScreen = (): React.ReactElement => {
             {analyzing ? (
               <ActivityIndicator color="#111827" />
             ) : (
-              <Text style={styles.scanTextSecondary}>Capture photo</Text>
+              <View style={styles.scanButtonContentSecondary}>
+                <Ionicons name="camera-outline" size={18} color={TEXT_PRIMARY} />
+                <Text style={styles.scanTextSecondary}>Capture photo</Text>
+              </View>
             )}
           </Pressable>
         </View>
@@ -772,10 +786,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scanButtonSecondary: {
-    backgroundColor: '#e2e8f0',
+    backgroundColor: CANVAS_COLOR,
   },
   scanButtonDisabled: {
     opacity: 0.75,
+  },
+  scanButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  scanButtonContentSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   scanText: {
     color: '#fff',
@@ -818,7 +842,7 @@ const styles = StyleSheet.create({
   },
   dateInputText: {
     fontSize: 15,
-    color: '#111827',
+    color: TEXT_PRIMARY,
   },
   dateInputPlaceholder: {
     fontSize: 15,

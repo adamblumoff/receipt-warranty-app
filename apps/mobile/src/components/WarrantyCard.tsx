@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { Warranty } from '@receipt-warranty/shared';
 import NoFeedbackPressable from './NoFeedbackPressable';
+import { SURFACE_COLOR, TEXT_PRIMARY, TEXT_MUTED } from '../theme/colors';
 
 interface WarrantyCardProps {
   warranty: Warranty;
@@ -74,7 +75,7 @@ const WarrantyCard = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: SURFACE_COLOR,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -101,7 +102,7 @@ const styles = StyleSheet.create({
   product: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
+    color: TEXT_PRIMARY,
   },
   badge: {
     fontSize: 12,
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
   },
   meta: {
     fontSize: 13,
-    color: '#6b7280',
+    color: TEXT_MUTED,
   },
   selectIndicator: {
     position: 'absolute',
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: SURFACE_COLOR,
   },
   selectIndicatorSelected: {
     backgroundColor: '#2563eb',
