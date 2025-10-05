@@ -113,6 +113,12 @@ const AddBenefitScreen = (): React.ReactElement => {
   const autoScanHandledRef = useRef(false);
   const [couponForm, setCouponForm] = useState(EMPTY_COUPON);
   const [warrantyForm, setWarrantyForm] = useState(EMPTY_WARRANTY);
+  const [couponErrors, setCouponErrors] = useState<
+    Partial<Record<keyof typeof EMPTY_COUPON, string>>
+  >({});
+  const [warrantyErrors, setWarrantyErrors] = useState<
+    Partial<Record<keyof typeof EMPTY_WARRANTY, string>>
+  >({});
   const [analysis, setAnalysis] = useState<VisionAnalysisResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -122,6 +128,32 @@ const AddBenefitScreen = (): React.ReactElement => {
   const [warrantyPurchaseDraft, setWarrantyPurchaseDraft] = useState<Date>(new Date());
   const [warrantyCoveragePickerVisible, setWarrantyCoveragePickerVisible] = useState(false);
   const [warrantyCoverageDraft, setWarrantyCoverageDraft] = useState<Date>(new Date());
+
+  const validateCoupon = useCallback(() => {
+    const nextErrors: typeof couponErrors = {};
+    if (!couponForm.merchant.trim()) nextErrors.merchant = 'Merchant is required for coupons.';
+    if (!couponForm.description.trim()) nextErrors.description = 'Add a short description.';
+    if (!couponForm.expiresOn) nextErrors.expiresOn = 'Select the expiration date.';
+    setCouponErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  }, [couponForm]);
+
+  const validateWarranty = useCallback(() => {
+    const nextErrors: typeof warrantyErrors = {};
+    if (!warrantyForm.productName.trim()) nextErrors.productName = 'Product name is required.';
+    if (!warrantyForm.merchant.trim()) nextErrors.merchant = 'Merchant is required.';
+    if (!warrantyForm.purchaseDate) nextErrors.purchaseDate = 'Add the purchase date.';
+    if (!warrantyForm.coverageEndsOn) nextErrors.coverageEndsOn = 'Add when coverage ends.';
+    setWarrantyErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  }, [warrantyForm]);
+
+  const handleModeChange = useCallback((nextMode: BenefitType) => {
+    triggerSelection();
+    setMode(nextMode);
+    setCouponErrors({});
+    setWarrantyErrors({});
+  }, []);
 
   useEffect(() => {
     if (routeParams.initialMode) {
@@ -213,6 +245,7 @@ const AddBenefitScreen = (): React.ReactElement => {
         ...prev,
         expiresOn: toUtcMiddayIso(date),
       }));
+      setCouponErrors((prev) => ({ ...prev, expiresOn: undefined }));
     });
   };
 
@@ -227,6 +260,7 @@ const AddBenefitScreen = (): React.ReactElement => {
           ...prev,
           purchaseDate: toUtcMiddayIso(date),
         }));
+        setWarrantyErrors((prev) => ({ ...prev, purchaseDate: undefined }));
       },
     );
   };
@@ -242,6 +276,7 @@ const AddBenefitScreen = (): React.ReactElement => {
           ...prev,
           coverageEndsOn: toUtcMiddayIso(date),
         }));
+        setWarrantyErrors((prev) => ({ ...prev, coverageEndsOn: undefined }));
       },
     );
   };
@@ -385,11 +420,8 @@ const AddBenefitScreen = (): React.ReactElement => {
     try {
       if (mode === 'coupon') {
         const { merchant, description, expiresOn, terms } = couponForm;
-        if (!merchant || !description || !expiresOn) {
-          Alert.alert(
-            'Missing info',
-            'Merchant, description, and expiration are required for coupons.',
-          );
+        if (!validateCoupon()) {
+          setSubmitting(false);
           return;
         }
         await addCoupon({
@@ -402,11 +434,8 @@ const AddBenefitScreen = (): React.ReactElement => {
         });
       } else {
         const { productName, merchant, purchaseDate, coverageEndsOn, coverageNotes } = warrantyForm;
-        if (!productName || !merchant || !purchaseDate || !coverageEndsOn) {
-          Alert.alert(
-            'Missing info',
-            'Please provide product, merchant, purchase date, and coverage end.',
-          );
+        if (!validateWarranty()) {
+          setSubmitting(false);
           return;
         }
         await addWarranty({
@@ -422,6 +451,8 @@ const AddBenefitScreen = (): React.ReactElement => {
 
       setCouponForm(EMPTY_COUPON);
       setWarrantyForm(EMPTY_WARRANTY);
+      setCouponErrors({});
+      setWarrantyErrors({});
       setAnalysis(null);
       triggerNotificationSuccess();
       const resetAction = CommonActions.reset({
@@ -442,25 +473,41 @@ const AddBenefitScreen = (): React.ReactElement => {
       <Text style={styles.helperText}>We’ll remind you before this coupon expires.</Text>
       <Text style={styles.label}>Merchant</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, couponErrors.merchant && styles.inputError]}
         value={couponForm.merchant}
-        onChangeText={(merchant) => setCouponForm((prev) => ({ ...prev, merchant }))}
+        onChangeText={(merchant) => {
+          setCouponForm((prev) => ({ ...prev, merchant }));
+          setCouponErrors((prev) => ({ ...prev, merchant: undefined }));
+        }}
         placeholder="Coffee Spot"
       />
+      {couponErrors.merchant ? <Text style={styles.errorText}>{couponErrors.merchant}</Text> : null}
       <Text style={styles.label}>Description</Text>
       <TextInput
-        style={[styles.input, styles.multiline]}
+        style={[styles.input, styles.multiline, couponErrors.description && styles.inputError]}
         multiline
         value={couponForm.description}
-        onChangeText={(description) => setCouponForm((prev) => ({ ...prev, description }))}
+        onChangeText={(description) => {
+          setCouponForm((prev) => ({ ...prev, description }));
+          setCouponErrors((prev) => ({ ...prev, description: undefined }));
+        }}
         placeholder="Buy one get one free latte"
       />
+      {couponErrors.description ? (
+        <Text style={styles.errorText}>{couponErrors.description}</Text>
+      ) : null}
       <Text style={styles.label}>Expires On</Text>
-      <Pressable style={[styles.input, styles.dateInput]} onPress={openCouponDatePicker}>
+      <Pressable
+        style={[styles.input, styles.dateInput, couponErrors.expiresOn && styles.inputError]}
+        onPress={openCouponDatePicker}
+      >
         <Text style={couponForm.expiresOn ? styles.dateInputText : styles.dateInputPlaceholder}>
           {couponExpiryDisplay}
         </Text>
       </Pressable>
+      {couponErrors.expiresOn ? (
+        <Text style={styles.errorText}>{couponErrors.expiresOn}</Text>
+      ) : null}
       <Text style={styles.label}>Terms (optional)</Text>
       <TextInput
         style={[styles.input, styles.multiline]}
@@ -479,34 +526,58 @@ const AddBenefitScreen = (): React.ReactElement => {
       </Text>
       <Text style={styles.label}>Product Name</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, warrantyErrors.productName && styles.inputError]}
         value={warrantyForm.productName}
-        onChangeText={(productName) => setWarrantyForm((prev) => ({ ...prev, productName }))}
+        onChangeText={(productName) => {
+          setWarrantyForm((prev) => ({ ...prev, productName }));
+          setWarrantyErrors((prev) => ({ ...prev, productName: undefined }));
+        }}
         placeholder="4K TV"
       />
+      {warrantyErrors.productName ? (
+        <Text style={styles.errorText}>{warrantyErrors.productName}</Text>
+      ) : null}
       <Text style={styles.label}>Merchant</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, warrantyErrors.merchant && styles.inputError]}
         value={warrantyForm.merchant}
-        onChangeText={(merchant) => setWarrantyForm((prev) => ({ ...prev, merchant }))}
+        onChangeText={(merchant) => {
+          setWarrantyForm((prev) => ({ ...prev, merchant }));
+          setWarrantyErrors((prev) => ({ ...prev, merchant: undefined }));
+        }}
         placeholder="Electronics World"
       />
+      {warrantyErrors.merchant ? (
+        <Text style={styles.errorText}>{warrantyErrors.merchant}</Text>
+      ) : null}
       <Text style={styles.label}>Purchase Date</Text>
-      <Pressable style={[styles.input, styles.dateInput]} onPress={openWarrantyPurchasePicker}>
+      <Pressable
+        style={[styles.input, styles.dateInput, warrantyErrors.purchaseDate && styles.inputError]}
+        onPress={openWarrantyPurchasePicker}
+      >
         <Text
           style={warrantyForm.purchaseDate ? styles.dateInputText : styles.dateInputPlaceholder}
         >
           {warrantyPurchaseDisplay}
         </Text>
       </Pressable>
+      {warrantyErrors.purchaseDate ? (
+        <Text style={styles.errorText}>{warrantyErrors.purchaseDate}</Text>
+      ) : null}
       <Text style={styles.label}>Coverage Ends On</Text>
-      <Pressable style={[styles.input, styles.dateInput]} onPress={openWarrantyCoveragePicker}>
+      <Pressable
+        style={[styles.input, styles.dateInput, warrantyErrors.coverageEndsOn && styles.inputError]}
+        onPress={openWarrantyCoveragePicker}
+      >
         <Text
           style={warrantyForm.coverageEndsOn ? styles.dateInputText : styles.dateInputPlaceholder}
         >
           {warrantyCoverageDisplay}
         </Text>
       </Pressable>
+      {warrantyErrors.coverageEndsOn ? (
+        <Text style={styles.errorText}>{warrantyErrors.coverageEndsOn}</Text>
+      ) : null}
       <Text style={styles.label}>Coverage Notes (optional)</Text>
       <TextInput
         style={[styles.input, styles.multiline]}
@@ -671,8 +742,7 @@ const AddBenefitScreen = (): React.ReactElement => {
             <Pressable
               key={type}
               onPress={() => {
-                triggerSelection();
-                setMode(type);
+                handleModeChange(type);
               }}
               style={[styles.modeButton, mode === type && styles.modeButtonActive]}
             >
@@ -894,6 +964,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: TEXT_MUTED,
   },
+  errorText: {
+    fontSize: 12,
+    color: '#dc2626',
+  },
   input: {
     borderWidth: 1,
     borderColor: '#d1d5db',
@@ -903,6 +977,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     backgroundColor: SURFACE_COLOR,
     color: TEXT_PRIMARY,
+  },
+  inputError: {
+    borderColor: '#dc2626',
   },
   dateInput: {
     justifyContent: 'center',
