@@ -42,10 +42,8 @@ export const checkExpiringBenefits = internalMutation({
       }
 
       for (const threshold of THRESHOLDS) {
-        const daysDiff = Math.floor(
-          (targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-        );
-
+        const diffMs = targetDate.getTime() - now.getTime();
+        const daysDiff = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
         if (daysDiff === threshold.days) {
           const alreadySent = doc.reminderState?.[threshold.key];
           if (!alreadySent) {
