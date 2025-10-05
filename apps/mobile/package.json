@@ -37,6 +37,7 @@
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/react": "~19.1.6",
+    "jest-expo": "~49.0.0",
     "typescript": "~5.9.2"
   }
 }
