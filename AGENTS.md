@@ -24,6 +24,8 @@ Use strict TypeScript throughout. Prettier formatting: 2-space indent, single qu
 - Successful saves dispatch a `CommonActions.reset` back to `Wallet`, so avoid stacking navigations when linking into `AddBenefitScreen`; always assume the stack is collapsed after creation.
 - Navigation buttons use `NoFeedbackPressable` from `apps/mobile/src/components/` to avoid pressed-state flashes when transitioning screens; reuse it for future navigation triggers.
 - Shared UI colors live under `apps/mobile/src/theme/colors.ts`; import from there instead of hardcoding hex values to keep the mobile palette consistent.
+- Wallet UI pulls prominent stats and skeleton placeholders from `BenefitOverviewScreen`; when adding new sections, lean on `spacing` constants (`apps/mobile/src/theme/spacing.ts`) to stay aligned.
+- The Add flow now surfaces an action sheet (see `AppsNavigator` headerRight) and haptic helpers in `utils/haptics.ts`; reuse these utilities rather than calling `expo-haptics` directly.
 
 ## Testing Guidelines
 Target Jest + React Native Testing Library for the Expo app and Convex’s testing harness for backend logic. Place mobile tests in `apps/mobile/__tests__/` mirroring screen/component names (`BenefitOverviewScreen.test.tsx`) and backend tests in `convex/__tests__/`. Aim for ≥80 % coverage on capture/import flows, sync logic, and reminder scheduling.
