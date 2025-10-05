@@ -38,6 +38,7 @@ Open the tunnel QR code in Expo Go or press `i`/`a` for simulator/emulator. The 
 - **Add benefits:** Use the “Add sample coupon/warranty” buttons or wire real capture flows.
 - **Delete benefits:** From any coupon/warranty detail view, tap “Delete …” to remove it. Removals sync to Convex and persist across reloads.
 - **Refresh:** Pull down on the wallet screen to refetch from Convex; offline cache keeps the UI populated if the network is unavailable.
+- **Reminders:** The wallet highlights coupons and warranties expiring within seven days. A daily Convex job updates reminder state so you can hook in push notifications later.
 
 ## Folder Overview
 - `apps/mobile` – Expo app (screens, providers, services, Metro config)

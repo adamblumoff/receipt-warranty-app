@@ -7,10 +7,22 @@ import WarrantyCard from '../components/WarrantyCard';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useBenefits } from '../providers/BenefitsProvider';
 
+const formatDate = (iso: string): string => {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return iso;
+  }
+  return new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(date);
+};
+
 const BenefitOverviewScreen = ({
   navigation,
 }: NativeStackScreenProps<RootStackParamList, 'Wallet'>): React.ReactElement => {
-  const { coupons, warranties, loading, refreshBenefits } = useBenefits();
+  const { coupons, warranties, reminders, loading, refreshBenefits } = useBenefits();
 
   return (
     <ScrollView
@@ -19,6 +31,23 @@ const BenefitOverviewScreen = ({
         <RefreshControl refreshing={loading} onRefresh={() => void refreshBenefits()} />
       }
     >
+      {reminders.length > 0 && (
+        <View style={styles.reminderSection}>
+          <Text style={styles.sectionTitle}>Upcoming Reminders</Text>
+          {reminders.map((reminder) => (
+            <View key={reminder.id} style={styles.reminderCard}>
+              <Text style={styles.reminderTitle}>
+                {reminder.benefitType === 'coupon' ? 'Coupon' : 'Warranty'} · {reminder.title}
+              </Text>
+              <Text style={styles.reminderSubtitle}>
+                Due on {formatDate(reminder.dueOn)} ({reminder.daysUntil} day
+                {reminder.daysUntil === 1 ? '' : 's'} left)
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+
       <Text style={styles.sectionTitle}>Active Coupons</Text>
       {coupons.length === 0 ? (
         <Text style={styles.emptyText}>No coupons saved. Add one to avoid missing a deal.</Text>
@@ -63,6 +92,24 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: '#111827',
+  },
+  reminderSection: {
+    gap: 8,
+  },
+  reminderCard: {
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    padding: 14,
+    gap: 4,
+  },
+  reminderTitle: {
+    color: '#f9fafb',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  reminderSubtitle: {
+    color: '#e5e7eb',
+    fontSize: 13,
   },
   emptyText: {
     fontSize: 14,

@@ -14,6 +14,7 @@ import { v4 as uuid } from 'uuid';
 import type {
   AnalyzeBenefitImageParams,
   Coupon,
+  ReminderSummary,
   VisionAnalysisResult,
   Warranty,
 } from '@receipt-warranty/shared';
@@ -45,6 +46,7 @@ interface BenefitsContextValue {
   coupons: Coupon[];
   warranties: Warranty[];
   loading: boolean;
+  reminders: ReminderSummary[];
   addCoupon: (coupon: Coupon) => Promise<void>;
   addWarranty: (warranty: Warranty) => Promise<void>;
   removeCoupon: (couponId: string) => Promise<void>;
@@ -110,6 +112,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
 
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [warranties, setWarranties] = useState<Warranty[]>([]);
+  const [reminders, setReminders] = useState<ReminderSummary[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -138,6 +141,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
         warrantiesRef.current = sample.warranties;
         await saveBenefits(sample);
       }
+      setReminders([]);
       setHydrated(true);
       setInitializing(false);
     }
@@ -171,6 +175,12 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
         setWarranties(nextWarranties);
         warrantiesRef.current = nextWarranties;
       }
+
+      const upcomingReminders = (await convex.query(
+        api.queries.benefits.listUpcomingReminders,
+        {},
+      )) as ReminderSummary[];
+      setReminders(upcomingReminders);
 
       await persist({ coupons: nextCoupons, warranties: nextWarranties });
     } catch (error) {
@@ -370,6 +380,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
       coupons,
       warranties,
       loading: initializing || syncing,
+      reminders,
       addCoupon,
       addWarranty,
       removeCoupon,
@@ -385,6 +396,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
       warranties,
       initializing,
       syncing,
+      reminders,
       addCoupon,
       addWarranty,
       removeCoupon,

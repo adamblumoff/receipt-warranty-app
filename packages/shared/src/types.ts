@@ -5,6 +5,7 @@ export interface Coupon {
   expiresOn: string;
   terms?: string;
   createdAt?: string;
+  reminderState?: ReminderState;
 }
 
 export interface Warranty {
@@ -15,6 +16,7 @@ export interface Warranty {
   coverageEndsOn: string;
   coverageNotes?: string;
   createdAt?: string;
+  reminderState?: ReminderState;
 }
 
 export type BenefitType = 'coupon' | 'warranty';
@@ -48,4 +50,18 @@ export interface AnalyzeBenefitImageParams {
   mimeType: string;
   benefitType?: BenefitType;
   originalFileName?: string;
+}
+
+export interface ReminderSummary {
+  id: string;
+  benefitId: string;
+  benefitType: BenefitType;
+  title: string;
+  dueOn: string;
+  daysUntil: number;
+}
+
+export interface ReminderState {
+  sevenDaySentAt?: string;
+  oneDaySentAt?: string;
 }

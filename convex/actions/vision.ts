@@ -103,7 +103,7 @@ export const analyzeBenefitImage = action({
 
     const multipart = extractMultipartFile(originalBuffer, blob.type);
     if (multipart) {
-      originalBuffer = multipart.file;
+      originalBuffer = Buffer.from(multipart.file);
     }
 
     const analysis = await analyzeImageBuffer(originalBuffer, args.analyzeAs ?? 'unknown');
