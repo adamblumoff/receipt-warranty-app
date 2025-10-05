@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -20,32 +20,58 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const AppNavigator = (): React.ReactElement => {
   return (
     <NavigationContainer>
-      <Stack.Navigator id={undefined} initialRouteName="Wallet">
+      <Stack.Navigator
+        id={undefined}
+        initialRouteName="Wallet"
+        screenOptions={({ navigation }) => ({
+          headerTitleAlign: 'center',
+          headerBackTitleVisible: true,
+          headerLeft: ({ canGoBack, label }) => {
+            if (!canGoBack) {
+              return null;
+            }
+            return (
+              <Pressable
+                style={styles.headerBackButton}
+                onPress={() => navigation.goBack()}
+                hitSlop={12}
+              >
+                <Text style={styles.headerBackText}>{label ? `‹ ${label}` : '‹ Back'}</Text>
+              </Pressable>
+            );
+          },
+        })}
+      >
         <Stack.Screen
           name="Wallet"
           component={BenefitOverviewScreen}
           options={({ navigation }) => ({
             title: 'Wallet',
-            headerTitleAlign: 'center',
             headerRight: () => (
-              <Button title="Add" onPress={() => navigation.navigate('AddBenefit')} />
+              <Pressable
+                style={styles.headerButton}
+                onPress={() => navigation.navigate('AddBenefit')}
+                hitSlop={8}
+              >
+                <Text style={styles.headerButtonText}>Add</Text>
+              </Pressable>
             ),
           })}
         />
         <Stack.Screen
           name="CouponDetail"
           component={CouponDetailScreen}
-          options={{ title: 'Coupon Details', headerTitleAlign: 'center' }}
+          options={{ title: 'Coupon Details' }}
         />
         <Stack.Screen
           name="WarrantyDetail"
           component={WarrantyDetailScreen}
-          options={{ title: 'Warranty Details', headerTitleAlign: 'center' }}
+          options={{ title: 'Warranty Details' }}
         />
         <Stack.Screen
           name="AddBenefit"
           component={AddBenefitScreen}
-          options={{ title: 'Add Benefit', headerTitleAlign: 'center' }}
+          options={{ title: 'Add Benefit' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
@@ -53,3 +79,26 @@ const AppNavigator = (): React.ReactElement => {
 };
 
 export default AppNavigator;
+
+const styles = StyleSheet.create({
+  headerButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  headerButtonText: {
+    color: '#111827',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  headerBackButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  headerBackText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#111827',
+  },
+});

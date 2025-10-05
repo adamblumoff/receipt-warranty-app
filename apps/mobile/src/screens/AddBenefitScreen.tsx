@@ -11,7 +11,6 @@ import {
   Platform,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
@@ -469,7 +468,7 @@ const AddBenefitScreen = (): React.ReactElement => {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.screen}>
       {Platform.OS === 'ios' ? (
         <Modal
           transparent
@@ -592,7 +591,11 @@ const AddBenefitScreen = (): React.ReactElement => {
           </View>
         </Modal>
       ) : null}
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.title}>Add a benefit</Text>
         <Text style={styles.subtitle}>
           Snap or pick a photo to auto-fill fields, then review before saving.
@@ -692,17 +695,23 @@ const AddBenefitScreen = (): React.ReactElement => {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
+  screen: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  scroll: {
     flex: 1,
     backgroundColor: '#f9fafb',
   },
   content: {
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    paddingTop: 12,
     gap: 20,
   },
   title: {
