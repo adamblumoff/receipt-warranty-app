@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,8 +13,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { triggerSelection, triggerImpactLight, triggerNotificationSuccess } from '../utils/haptics';
-import { CommonActions, useNavigation } from '@react-navigation/native';
+import { CommonActions, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -46,6 +47,8 @@ const logEvent = (label: string, context?: Record<string, unknown>): void => {
     console.log(`[${label}]`);
   }
 };
+
+type AddBenefitRouteParams = NonNullable<RootStackParamList['AddBenefit']>;
 
 const EMPTY_COUPON = {
   merchant: '',
@@ -102,9 +105,12 @@ const formatReadableDate = (iso?: string): string => {
 
 const AddBenefitScreen = (): React.ReactElement => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'AddBenefit'>>();
+  const routeParams = useMemo<AddBenefitRouteParams>(() => route.params ?? {}, [route.params]);
   const { addCoupon, addWarranty, analyzeBenefitImage } = useBenefits();
 
-  const [mode, setMode] = useState<BenefitType>('coupon');
+  const [mode, setMode] = useState<BenefitType>(() => routeParams.initialMode ?? 'coupon');
+  const autoScanHandledRef = useRef(false);
   const [couponForm, setCouponForm] = useState(EMPTY_COUPON);
   const [warrantyForm, setWarrantyForm] = useState(EMPTY_WARRANTY);
   const [analysis, setAnalysis] = useState<VisionAnalysisResult | null>(null);
@@ -116,6 +122,26 @@ const AddBenefitScreen = (): React.ReactElement => {
   const [warrantyPurchaseDraft, setWarrantyPurchaseDraft] = useState<Date>(new Date());
   const [warrantyCoveragePickerVisible, setWarrantyCoveragePickerVisible] = useState(false);
   const [warrantyCoverageDraft, setWarrantyCoverageDraft] = useState<Date>(new Date());
+
+  useEffect(() => {
+    if (routeParams.initialMode) {
+      setMode(routeParams.initialMode);
+    }
+  }, [routeParams.initialMode]);
+
+  useEffect(() => {
+    if (autoScanHandledRef.current) {
+      return;
+    }
+    if (routeParams.autoScanSource) {
+      autoScanHandledRef.current = true;
+      const timer = setTimeout(() => {
+        void handleAnalyzeImage(routeParams.autoScanSource ?? 'library');
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+    autoScanHandledRef.current = true;
+  }, [routeParams.autoScanSource, handleAnalyzeImage]);
 
   useEffect(() => {
     if (couponForm.expiresOn) {
@@ -238,118 +264,121 @@ const AddBenefitScreen = (): React.ReactElement => {
     setCouponDatePickerVisible(false);
   };
 
-  const handleAnalyzeImage = async (source: 'library' | 'camera') => {
-    triggerImpactLight();
-    if (source === 'library') {
-      const mediaPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!mediaPermission.granted) {
-        Alert.alert('Permission required', 'Media library access is needed to scan an image.');
-        return;
-      }
-    } else {
-      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
-      if (!cameraPermission.granted) {
-        Alert.alert('Permission required', 'Camera access is needed to capture an image.');
-        return;
-      }
-    }
-
-    const pickerOptions: ImagePicker.ImagePickerOptions = {
-      mediaTypes: 'images',
-      quality: 0.8,
-    };
-
-    const overallStart = Date.now();
-    logEvent('vision:start', { source });
-
-    const pickerStart = Date.now();
-    const pickerResult =
-      source === 'library'
-        ? await ImagePicker.launchImageLibraryAsync(pickerOptions)
-        : await ImagePicker.launchCameraAsync(pickerOptions);
-    logTiming('picker', pickerStart);
-
-    if (pickerResult.canceled || !pickerResult.assets?.length) {
-      return;
-    }
-
-    const asset = pickerResult.assets[0];
-    let workingUri = asset.uri;
-    let mimeType = asset.mimeType ?? 'image/jpeg';
-
-    try {
-      const transcodeStart = Date.now();
-      const maxDimension = 900;
-      const actions: ImageManipulator.Action[] = [];
-      if (asset.width && asset.height) {
-        const longestEdge = Math.max(asset.width, asset.height);
-        if (longestEdge > maxDimension) {
-          const scale = maxDimension / longestEdge;
-          actions.push({
-            resize: {
-              width: Math.round(asset.width * scale),
-              height: Math.round(asset.height * scale),
-            },
-          });
+  const handleAnalyzeImage = useCallback(
+    async (source: 'library' | 'camera') => {
+      triggerImpactLight();
+      if (source === 'library') {
+        const mediaPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!mediaPermission.granted) {
+          Alert.alert('Permission required', 'Media library access is needed to scan an image.');
+          return;
+        }
+      } else {
+        const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+        if (!cameraPermission.granted) {
+          Alert.alert('Permission required', 'Camera access is needed to capture an image.');
+          return;
         }
       }
-      const manipulated = await ImageManipulator.manipulateAsync(asset.uri, actions, {
-        compress: 0.4,
-        format: ImageManipulator.SaveFormat.JPEG,
-      });
-      workingUri = manipulated.uri;
-      mimeType = 'image/jpeg';
-      logTiming('transcode', transcodeStart);
-      const info = await FileSystem.getInfoAsync(workingUri);
-      logEvent('vision:transcoded', {
-        uri: workingUri,
-        width: manipulated.width,
-        height: manipulated.height,
-        size: info.exists ? info.size : undefined,
-      });
-    } catch (manipulationError) {
-      console.warn('Image manipulation skipped', manipulationError);
-    }
 
-    const applyAnalysis = (result: VisionAnalysisResult) => {
-      setAnalysis(result);
-      if (mode === 'coupon') {
-        setCouponForm((prev) => ({
-          merchant: result.fields.merchant?.value ?? prev.merchant,
-          description: result.fields.description?.value ?? prev.description,
-          expiresOn: result.fields.expiresOn?.value ?? prev.expiresOn,
-          terms: prev.terms,
-        }));
-      } else {
-        setWarrantyForm((prev) => ({
-          productName: result.fields.productName?.value ?? prev.productName,
-          merchant: result.fields.merchant?.value ?? prev.merchant,
-          purchaseDate: result.fields.purchaseDate?.value ?? prev.purchaseDate,
-          coverageEndsOn: result.fields.coverageEndsOn?.value ?? prev.coverageEndsOn,
-          coverageNotes: prev.coverageNotes,
-        }));
+      const pickerOptions: ImagePicker.ImagePickerOptions = {
+        mediaTypes: 'images',
+        quality: 0.8,
+      };
+
+      const overallStart = Date.now();
+      logEvent('vision:start', { source });
+
+      const pickerStart = Date.now();
+      const pickerResult =
+        source === 'library'
+          ? await ImagePicker.launchImageLibraryAsync(pickerOptions)
+          : await ImagePicker.launchCameraAsync(pickerOptions);
+      logTiming('picker', pickerStart);
+
+      if (pickerResult.canceled || !pickerResult.assets?.length) {
+        return;
       }
-      logEvent('vision:applied_remote');
-    };
 
-    setAnalyzing(true);
-    try {
-      const visionStart = Date.now();
-      const visionResult = await analyzeBenefitImage({
-        uri: workingUri,
-        mimeType,
-        benefitType: mode,
-      });
-      logTiming('vision', visionStart);
-      applyAnalysis(visionResult);
-    } catch (error) {
-      console.warn('Vision analysis failed', error);
-      Alert.alert('Unable to analyze image', 'Please try again with a clearer photo.');
-    } finally {
-      logTiming('overall', overallStart);
-      setAnalyzing(false);
-    }
-  };
+      const asset = pickerResult.assets[0];
+      let workingUri = asset.uri;
+      let mimeType = asset.mimeType ?? 'image/jpeg';
+
+      try {
+        const transcodeStart = Date.now();
+        const maxDimension = 900;
+        const actions: ImageManipulator.Action[] = [];
+        if (asset.width && asset.height) {
+          const longestEdge = Math.max(asset.width, asset.height);
+          if (longestEdge > maxDimension) {
+            const scale = maxDimension / longestEdge;
+            actions.push({
+              resize: {
+                width: Math.round(asset.width * scale),
+                height: Math.round(asset.height * scale),
+              },
+            });
+          }
+        }
+        const manipulated = await ImageManipulator.manipulateAsync(asset.uri, actions, {
+          compress: 0.4,
+          format: ImageManipulator.SaveFormat.JPEG,
+        });
+        workingUri = manipulated.uri;
+        mimeType = 'image/jpeg';
+        logTiming('transcode', transcodeStart);
+        const info = await FileSystem.getInfoAsync(workingUri);
+        logEvent('vision:transcoded', {
+          uri: workingUri,
+          width: manipulated.width,
+          height: manipulated.height,
+          size: info.exists ? info.size : undefined,
+        });
+      } catch (manipulationError) {
+        console.warn('Image manipulation skipped', manipulationError);
+      }
+
+      const applyAnalysis = (result: VisionAnalysisResult) => {
+        setAnalysis(result);
+        if (mode === 'coupon') {
+          setCouponForm((prev) => ({
+            merchant: result.fields.merchant?.value ?? prev.merchant,
+            description: result.fields.description?.value ?? prev.description,
+            expiresOn: result.fields.expiresOn?.value ?? prev.expiresOn,
+            terms: prev.terms,
+          }));
+        } else {
+          setWarrantyForm((prev) => ({
+            productName: result.fields.productName?.value ?? prev.productName,
+            merchant: result.fields.merchant?.value ?? prev.merchant,
+            purchaseDate: result.fields.purchaseDate?.value ?? prev.purchaseDate,
+            coverageEndsOn: result.fields.coverageEndsOn?.value ?? prev.coverageEndsOn,
+            coverageNotes: prev.coverageNotes,
+          }));
+        }
+        logEvent('vision:applied_remote');
+      };
+
+      setAnalyzing(true);
+      try {
+        const visionStart = Date.now();
+        const visionResult = await analyzeBenefitImage({
+          uri: workingUri,
+          mimeType,
+          benefitType: mode,
+        });
+        logTiming('vision', visionStart);
+        applyAnalysis(visionResult);
+      } catch (error) {
+        console.warn('Vision analysis failed', error);
+        Alert.alert('Unable to analyze image', 'Please try again with a clearer photo.');
+      } finally {
+        logTiming('overall', overallStart);
+        setAnalyzing(false);
+      }
+    },
+    [analyzeBenefitImage, mode],
+  );
 
   const handleSave = async () => {
     setSubmitting(true);

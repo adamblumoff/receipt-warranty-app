@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { Alert, Platform, StyleSheet, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import type { NativeStackHeaderProps } from '@react-navigation/native-stack';
 
 import AddBenefitScreen from '../screens/AddBenefitScreen';
 import BenefitOverviewScreen from '../screens/BenefitOverviewScreen';
@@ -15,12 +16,42 @@ export type RootStackParamList = {
   Wallet: undefined;
   CouponDetail: { couponId: string };
   WarrantyDetail: { warrantyId: string };
-  AddBenefit: undefined;
+  AddBenefit:
+    | { initialMode?: 'coupon' | 'warranty'; autoScanSource?: 'library' | 'camera' }
+    | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator = (): React.ReactElement => {
+  const handleAddPressed = (navigation: NativeStackHeaderProps['navigation']) => {
+    const navigateTo = (params?: RootStackParamList['AddBenefit']) => {
+      navigation.navigate('AddBenefit', params);
+    };
+
+    const options = [
+      {
+        text: 'Scan coupon',
+        onPress: () => navigateTo({ initialMode: 'coupon', autoScanSource: 'library' }),
+      },
+      {
+        text: 'Scan warranty',
+        onPress: () => navigateTo({ initialMode: 'warranty', autoScanSource: 'library' }),
+      },
+      {
+        text: 'Manual entry',
+        onPress: () => navigateTo({}),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ];
+
+    if (Platform.OS === 'android') {
+      Alert.alert('Add benefit', 'Choose how you want to capture a benefit.', options);
+    } else {
+      Alert.alert('Add benefit', undefined, options);
+    }
+  };
+
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -41,7 +72,7 @@ const AppNavigator = (): React.ReactElement => {
             headerRight: () => (
               <NoFeedbackPressable
                 style={styles.headerButton}
-                onPress={() => navigation.navigate('AddBenefit')}
+                onPress={() => handleAddPressed(navigation)}
                 hitSlop={8}
               >
                 <Text style={styles.headerButtonText}>Add</Text>
