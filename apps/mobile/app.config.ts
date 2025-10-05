@@ -25,6 +25,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       fallbackToCacheTimeout: 0,
     },
     assetBundlePatterns: ['**/*'],
+    plugins: ['expo-notifications'],
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.adamblumoff.receiptwarrantyapp',
@@ -35,6 +36,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         backgroundColor: '#ffffff',
       },
       package: 'com.adamblumoff.receiptwarrantyapp',
+      notification: {
+        color: '#111827',
+      },
     },
     web: {
       bundler: 'metro',

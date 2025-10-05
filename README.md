@@ -15,6 +15,12 @@ Duplicate `.env.example` to `.env.local` in the repo root and fill in your Conve
 EXPO_PUBLIC_CONVEX_URL=https://<your-deployment>.convex.cloud
 CONVEX_DEPLOYMENT=<deployment-name>
 CONVEX_AUTH_TOKEN=<token>
+# Required for local OCR tests
+GOOGLE_VISION_CLIENT_EMAIL=...
+GOOGLE_VISION_PRIVATE_KEY="..."
+GOOGLE_VISION_PROJECT_ID=...
+# Optional: enable server-side push notifications
+EXPO_ACCESS_TOKEN=...
 ```
 
 When the Expo app starts it reads `.env`/`.env.local` via `app.config.ts` and exposes `EXPO_PUBLIC_CONVEX_URL` to the mobile client.
@@ -39,6 +45,7 @@ Open the tunnel QR code in Expo Go or press `i`/`a` for simulator/emulator. The 
 - **Delete benefits:** From any coupon/warranty detail view, tap “Delete …” to remove it. Removals sync to Convex and persist across reloads.
 - **Refresh:** Pull down on the wallet screen to refetch from Convex; offline cache keeps the UI populated if the network is unavailable.
 - **Reminders:** The wallet highlights coupons and warranties expiring within seven days. A daily Convex job updates reminder state so you can hook in push notifications later.
+- **Push notifications:** When the app registers for notifications, it uploads the Expo push token to Convex. Provide `EXPO_ACCESS_TOKEN` (from Expo account settings) so the reminder job can fan out notifications. Without it, the backend logs reminders but skips push delivery.
 
 ## Folder Overview
 - `apps/mobile` – Expo app (screens, providers, services, Metro config)
@@ -57,3 +64,9 @@ For detailed contributor practices see [AGENTS.md](./AGENTS.md).
 3. Emits warnings (without failing) when the parser can’t extract a field so you can track accuracy over time.
 
 Use this command before shipping parser tweaks or adding new fixtures. If you need to bypass the check locally, run `SKIP_OCR_TESTS=1 npm test`.
+
+### Push notifications
+
+1. Set `EXPO_ACCESS_TOKEN` in your `.env.local` (from Expo Account → Access Tokens).
+2. Run the app on a physical device (Expo Go or dev client), accept the notification prompt, and add a reminder-eligible coupon. The wallet will show upcoming reminders and the backend job will push notifications on the 7-day and 1-day thresholds.
+3. To debug, check Convex logs for `[reminder]` entries.

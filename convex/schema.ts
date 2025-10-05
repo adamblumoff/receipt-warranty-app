@@ -36,4 +36,9 @@ export default defineSchema({
     triggeredAt: v.string(),
     expiresOn: v.string(),
   }).index('by_benefit', ['benefitId', 'benefitType', 'thresholdDays']),
+  pushTokens: defineTable({
+    token: v.string(),
+    platform: v.union(v.literal('ios'), v.literal('android'), v.literal('unknown')),
+    createdAt: v.string(),
+  }).index('by_token', ['token']),
 });

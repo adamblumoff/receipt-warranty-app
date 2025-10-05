@@ -26,6 +26,7 @@ import {
   saveBenefits,
   type StoredBenefits,
 } from '../services/benefitsStorage';
+import { registerForPushNotificationsAsync } from '../services/pushNotifications';
 
 import type { Id } from '../../../../convex/_generated/dataModel';
 
@@ -109,6 +110,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
   const deleteCouponMutation = useMutation(api.mutations.benefits.deleteCoupon);
   const deleteWarrantyMutation = useMutation(api.mutations.benefits.deleteWarranty);
   const generateUploadUrl = useMutation(api.mutations.uploads.generateUploadUrl);
+  const registerPushTokenMutation = useMutation(api.mutations.notifications.registerPushToken);
 
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [warranties, setWarranties] = useState<Warranty[]>([]);
@@ -119,6 +121,7 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
 
   const couponsRef = useRef<Coupon[]>([]);
   const warrantiesRef = useRef<Warranty[]>([]);
+  const pushRegisteredRef = useRef(false);
 
   const persist = useCallback(async (next: StoredBenefits) => {
     await saveBenefits(next);
@@ -189,6 +192,26 @@ export const BenefitsProvider = ({ children }: BenefitsProviderProps): React.Rea
       setSyncing(false);
     }
   }, [convex, persist]);
+
+  useEffect(() => {
+    if (pushRegisteredRef.current) {
+      return;
+    }
+    pushRegisteredRef.current = true;
+    void (async () => {
+      try {
+        const registration = await registerForPushNotificationsAsync();
+        if (registration) {
+          await registerPushTokenMutation({
+            token: registration.token,
+            platform: registration.platform,
+          });
+        }
+      } catch (error) {
+        console.warn('Push registration failed', error);
+      }
+    })();
+  }, [registerPushTokenMutation]);
 
   useEffect(() => {
     if (hydrated) {
